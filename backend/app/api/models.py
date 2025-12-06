@@ -1,6 +1,7 @@
-from typing import List, Dict, Any
-from fastapi import APIRouter
 import logging
+
+from fastapi import APIRouter
+
 from app.schemas.response import APIResponse
 from app.services.groq import get_available_models
 from app.utils.response import success_response
@@ -23,4 +24,3 @@ async def get_models():
     except Exception as e:
         logger.error(f"Failed to retrieve models - Error: {str(e)}")
         raise
-

@@ -1,11 +1,12 @@
-from typing import List
+import logging
+
 from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-import logging
+
 from app.database import get_db
 from app.models.user import User
-from app.schemas.session import SessionCreate, SessionUpdate, SessionResponse, SessionListResponse
 from app.schemas.response import APIResponse
+from app.schemas.session import SessionCreate, SessionUpdate
 from app.services.session import (
     get_user_sessions,
     create_session,
@@ -22,10 +23,10 @@ router = APIRouter(prefix="/api/sessions", tags=["Chat Sessions"])
 
 @router.get("/list", response_model=APIResponse)
 async def get_sessions(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=100),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+        skip: int = Query(0, ge=0),
+        limit: int = Query(100, ge=1, le=100),
+        current_user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
 ):
     """Get all chat sessions for the authenticated user."""
     logger.info(f"Get sessions requested for user_id: {current_user.id}, skip: {skip}, limit: {limit}")
@@ -43,15 +44,17 @@ async def get_sessions(
 
 @router.post("/create", response_model=APIResponse, status_code=status.HTTP_201_CREATED)
 async def create_new_session(
-    session_data: SessionCreate,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+        session_data: SessionCreate,
+        current_user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
 ):
     """Create a new chat session."""
-    logger.info(f"Create session requested for user_id: {current_user.id}, title: {session_data.title}, model: {session_data.model_name}")
+    logger.info(
+        f"Create session requested for user_id: {current_user.id}, title: {session_data.title}, model: {session_data.model_name}")
     try:
         session = await create_session(db, current_user, session_data)
-        logger.info(f"Session created successfully - session_id: {session.id}, user_id: {current_user.id}, model: {session.model_name}")
+        logger.info(
+            f"Session created successfully - session_id: {session.id}, user_id: {current_user.id}, model: {session.model_name}")
         return success_response(
             message="Session created successfully",
             data=session.model_dump()
@@ -63,9 +66,9 @@ async def create_new_session(
 
 @router.get("/{session_id}/details", response_model=APIResponse)
 async def get_session(
-    session_id: int,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+        session_id: int,
+        current_user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
 ):
     """Get details of a specific chat session."""
     logger.info(f"Get session requested - session_id: {session_id}, user_id: {current_user.id}")
@@ -77,16 +80,17 @@ async def get_session(
             data=session.model_dump()
         )
     except Exception as e:
-        logger.warning(f"Failed to retrieve session - session_id: {session_id}, user_id: {current_user.id} - Error: {str(e)}")
+        logger.warning(
+            f"Failed to retrieve session - session_id: {session_id}, user_id: {current_user.id} - Error: {str(e)}")
         raise
 
 
 @router.put("/{session_id}/update", response_model=APIResponse)
 async def update_session_endpoint(
-    session_id: int,
-    session_update: SessionUpdate,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+        session_id: int,
+        session_update: SessionUpdate,
+        current_user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
 ):
     """Update a chat session."""
     logger.info(f"Update session requested - session_id: {session_id}, user_id: {current_user.id}")
@@ -98,15 +102,16 @@ async def update_session_endpoint(
             data=session.model_dump()
         )
     except Exception as e:
-        logger.warning(f"Failed to update session - session_id: {session_id}, user_id: {current_user.id} - Error: {str(e)}")
+        logger.warning(
+            f"Failed to update session - session_id: {session_id}, user_id: {current_user.id} - Error: {str(e)}")
         raise
 
 
 @router.delete("/{session_id}/delete", response_model=APIResponse, status_code=status.HTTP_200_OK)
 async def delete_session_endpoint(
-    session_id: int,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+        session_id: int,
+        current_user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
 ):
     """Delete a chat session."""
     logger.info(f"Delete session requested - session_id: {session_id}, user_id: {current_user.id}")
@@ -118,6 +123,6 @@ async def delete_session_endpoint(
             data=None
         )
     except Exception as e:
-        logger.warning(f"Failed to delete session - session_id: {session_id}, user_id: {current_user.id} - Error: {str(e)}")
+        logger.warning(
+            f"Failed to delete session - session_id: {session_id}, user_id: {current_user.id} - Error: {str(e)}")
         raise
-

@@ -1,21 +1,23 @@
+import logging
 import os
 import uuid
-from typing import List, Optional
+from typing import List
+
 from fastapi import APIRouter, Depends, status, Form, File as FastAPIFile, UploadFile
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-import logging
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.database import get_db
-from app.models.user import User
-from app.models.session import ChatSession
+from app.exceptions import NotFoundError, ForbiddenError
 from app.models.message import File, Message
-from app.schemas.message import MessageCreate, MessageResponse, ChatRequest
+from app.models.session import ChatSession
+from app.models.user import User
+from app.schemas.message import MessageCreate, MessageResponse
 from app.schemas.response import APIResponse
-from app.services.message import get_session_messages, create_message
 from app.services.groq import get_chat_completion
+from app.services.message import get_session_messages, create_message
 from app.utils.dependencies import get_current_user
 from app.utils.response import fail_response, success_response
-from app.exceptions import NotFoundError, ForbiddenError
 
 logger = logging.getLogger(__name__)
 router = APIRouter(
@@ -34,9 +36,9 @@ if not os.path.exists(UPLOAD_DIR):
 
 @router.get("/list", response_model=APIResponse)
 async def get_messages(
-    session_id: int,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+        session_id: int,
+        current_user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
 ):
     """Get all messages in a chat session."""
     logger.info(
@@ -57,10 +59,10 @@ async def get_messages(
 
 @router.post("", response_model=APIResponse, status_code=status.HTTP_201_CREATED)
 async def create_new_message(
-    session_id: int,
-    message_data: MessageCreate,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+        session_id: int,
+        message_data: MessageCreate,
+        current_user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
 ):
     """Add a new message to a chat session."""
     content_preview = message_data.content[:50] + "..." if len(
@@ -83,11 +85,11 @@ async def create_new_message(
 
 @router.post("/chat", response_model=APIResponse, status_code=status.HTTP_201_CREATED)
 async def chat(
-    session_id: int,
-    content: str = Form(...),
-    files: List[UploadFile] = FastAPIFile(default=[]),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+        session_id: int,
+        content: str = Form(...),
+        files: List[UploadFile] = FastAPIFile(default=[]),
+        current_user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
 ):
     """Send a message and get AI response."""
     content_preview = content[:50] + "..." if len(
@@ -121,7 +123,7 @@ async def chat(
         file_list = []
         file_contents = []
         saved_file_paths = []  # Track saved files for cleanup on error
-        
+
         if files:
             if len(files) > 2:
                 logger.warning(f"Maximum 2 files are allowed - session_id: {session_id}, user_id: {current_user.id}")
@@ -130,7 +132,7 @@ async def chat(
             for file in files:
                 file_name = file.filename
                 file_type = file.content_type or "application/octet-stream"
-                
+
                 # Validate file type BEFORE processing
                 if file_type != "text/plain":
                     logger.warning(
@@ -149,7 +151,7 @@ async def chat(
                 try:
                     # Read file content once
                     file_bytes = await file.read()
-                    
+
                     # Validate file size
                     file_size = len(file_bytes)
                     if file_size > MAX_FILE_SIZE:
@@ -167,11 +169,11 @@ async def chat(
                         return fail_response(
                             message=f"File {file_name} exceeds maximum size of {MAX_FILE_SIZE / (1024 * 1024):.0f}MB"
                         )
-                    
+
                     # Generate unique filename to avoid race conditions
                     unique_filename = f"{uuid.uuid4()}_{file_name}"
                     file_path = os.path.join(UPLOAD_DIR, unique_filename)
-                    
+
                     # Save to disk
                     try:
                         with open(file_path, "wb") as f:
@@ -194,7 +196,7 @@ async def chat(
                             except Exception as cleanup_error:
                                 logger.error(f"Failed to cleanup file {saved_path}: {cleanup_error}")
                         return fail_response(message=f"Failed to save file {file_name}")
-                    
+
                     # Decode content for database storage
                     try:
                         file_content = file_bytes.decode("utf-8")
@@ -211,7 +213,7 @@ async def chat(
                         except Exception as cleanup_error:
                             logger.error(f"Failed to cleanup file {file_path}: {cleanup_error}")
                         return fail_response(message=f"File {file_name} is not valid UTF-8 text")
-                    
+
                     # Create file record (message_id will be set after message creation)
                     file_item = File(
                         filename=file_name,
@@ -222,12 +224,12 @@ async def chat(
                     )
                     file_contents.append(file_content)
                     file_list.append(file_item)
-                    
+
                     logger.info(
                         f"File processed successfully: {file_name} - session_id: {session_id}, "
                         f"user_id: {current_user.id}, size: {file_size} bytes"
                     )
-                    
+
                 except Exception as e:
                     logger.error(
                         f"File processing error: {file_name} - session_id: {session_id}, "
@@ -249,18 +251,18 @@ async def chat(
             content=content,
             files=file_list,  # Files will be associated when message is committed
         )
-        
+
         try:
             db.add(user_message)
             # Commit message and files together (SQLAlchemy will set message_id automatically via relationship)
             await db.commit()
             await db.refresh(user_message)
-            
+
             logger.info(
                 f"User message created - message_id: {user_message.id}, session_id: {session_id}, "
                 f"files_count: {len(file_list)}"
             )
-            
+
             if file_list:
                 logger.info(
                     f"Files associated with message - message_id: {user_message.id}, "

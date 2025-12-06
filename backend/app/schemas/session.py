@@ -1,6 +1,8 @@
-from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Optional, List
+
+from pydantic import BaseModel, Field
+
 from app.schemas.message import MessageResponse
 
 
@@ -10,10 +12,11 @@ class SessionBase(BaseModel):
 
 
 class SessionCreate(SessionBase):
-    title: Optional[str] = Field(None, max_length=200, description="Session title (will be generated from message if not provided)")
+    title: Optional[str] = Field(None, max_length=200,
+                                 description="Session title (will be generated from message if not provided)")
     model_name: str = Field(default="llama-3.1-8b-instant", description="AI model name")
     message: Optional[str] = Field(None, min_length=1, description="Initial message to generate title from")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -36,7 +39,7 @@ class SessionResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     messages: Optional[List[MessageResponse]] = None
-    
+
     class Config:
         from_attributes = True
 
@@ -48,7 +51,6 @@ class SessionListResponse(BaseModel):
     model_name: str
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
-

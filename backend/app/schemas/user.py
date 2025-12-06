@@ -1,6 +1,7 @@
-from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 from typing import Optional
+
+from pydantic import BaseModel, EmailStr, Field
 
 
 class UserBase(BaseModel):
@@ -27,7 +28,7 @@ class UserResponse(BaseModel):
     is_premium: bool
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -35,7 +36,7 @@ class UserResponse(BaseModel):
 class PasswordChange(BaseModel):
     current_password: str = Field(..., description="Current password")
     new_password: str = Field(..., min_length=8, description="New password (minimum 8 characters)")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -43,4 +44,3 @@ class PasswordChange(BaseModel):
                 "new_password": "newpassword456"
             }
         }
-

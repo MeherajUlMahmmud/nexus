@@ -1,11 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 import logging
+
+from fastapi import APIRouter, Depends, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.database import get_db
 from app.models.user import User
-from app.schemas.auth import Register, Login, Token
-from app.schemas.user import UserResponse
+from app.schemas.auth import Register, Login
 from app.schemas.response import APIResponse
+from app.schemas.user import UserResponse
 from app.services.auth import register_user, login_user, refresh_token
 from app.utils.dependencies import get_current_user
 from app.utils.response import success_response
@@ -16,26 +18,28 @@ router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
 @router.post("/register", response_model=APIResponse, status_code=status.HTTP_201_CREATED)
 async def register(
-    user_data: Register,
-    db: AsyncSession = Depends(get_db)
+        user_data: Register,
+        db: AsyncSession = Depends(get_db)
 ):
     """Register a new user."""
     logger.info(f"Registration attempt for username: {user_data.username}, email: {user_data.email}")
     try:
         user = await register_user(db, user_data)
-        logger.info(f"User registered successfully - user_id: {user.id}, username: {user.username}, email: {user.email}")
+        logger.info(
+            f"User registered successfully - user_id: {user.id}, username: {user.username}, email: {user.email}")
         return success_response(
             message="User registered successfully",
         )
     except Exception as e:
-        logger.error(f"Registration failed for username: {user_data.username}, email: {user_data.email} - Error: {str(e)}")
+        logger.error(
+            f"Registration failed for username: {user_data.username}, email: {user_data.email} - Error: {str(e)}")
         raise
 
 
 @router.post("/login", response_model=APIResponse)
 async def login(
-    login_data: Login,
-    db: AsyncSession = Depends(get_db)
+        login_data: Login,
+        db: AsyncSession = Depends(get_db)
 ):
     """Authenticate user and get JWT token."""
     identifier = login_data.username or login_data.email
@@ -55,8 +59,8 @@ async def login(
 
 @router.post("/refresh", response_model=APIResponse)
 async def refresh(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+        current_user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
 ):
     """Refresh JWT token."""
     logger.info(f"Token refresh requested for user_id: {current_user.id}, username: {current_user.username}")
@@ -74,7 +78,7 @@ async def refresh(
 
 @router.get("/me", response_model=APIResponse)
 async def get_current_user_info(
-    current_user: User = Depends(get_current_user)
+        current_user: User = Depends(get_current_user)
 ):
     """Get current user profile."""
     logger.info(f"Get current user info requested for user_id: {current_user.id}, username: {current_user.username}")
@@ -88,4 +92,3 @@ async def get_current_user_info(
     except Exception as e:
         logger.error(f"Failed to retrieve user profile for user_id: {current_user.id} - Error: {str(e)}")
         raise
-

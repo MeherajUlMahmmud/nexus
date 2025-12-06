@@ -1,17 +1,16 @@
-import tempfile
-import os
-from pathlib import Path
-from typing import List
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status
 import logging
+import os
+import tempfile
+from pathlib import Path
 
-from app.database import get_db
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status
+
+from app.exceptions import BadRequestError
 from app.models.user import User
 from app.schemas.response import APIResponse
 from app.services.groq import transcribe_audio
 from app.utils.dependencies import get_current_user
 from app.utils.response import success_response
-from app.exceptions import BadRequestError
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["Transcription"])
@@ -23,10 +22,10 @@ SUPPORTED_FORMATS = {'.mp3', '.mp4', '.mpeg', '.mpga', '.m4a', '.wav', '.webm'}
 
 @router.post("/transcribe", response_model=APIResponse)
 async def transcribe_audio_endpoint(
-    audio_file: UploadFile = File(..., description="Audio file to transcribe"),
-    temperature: float = 0.0,
-    response_format: str = "verbose_json",
-    current_user: User = Depends(get_current_user),
+        audio_file: UploadFile = File(..., description="Audio file to transcribe"),
+        temperature: float = 0.0,
+        response_format: str = "verbose_json",
+        current_user: User = Depends(get_current_user),
 ):
     """
     Transcribe audio file to text using Groq's Whisper API.
@@ -55,8 +54,8 @@ async def transcribe_audio_endpoint(
 
         if file_size > MAX_AUDIO_SIZE:
             raise BadRequestError(
-                f"File too large: {file_size / (1024*1024):.2f}MB. "
-                f"Maximum size: {MAX_AUDIO_SIZE / (1024*1024):.0f}MB"
+                f"File too large: {file_size / (1024 * 1024):.2f}MB. "
+                f"Maximum size: {MAX_AUDIO_SIZE / (1024 * 1024):.0f}MB"
             )
 
         if file_size == 0:
@@ -64,8 +63,8 @@ async def transcribe_audio_endpoint(
 
         # Save to temporary file
         with tempfile.NamedTemporaryFile(
-            suffix=file_ext,
-            delete=False
+                suffix=file_ext,
+                delete=False
         ) as temp_file:
             temp_path = temp_file.name
             temp_file.write(audio_content)

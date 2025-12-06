@@ -1,9 +1,11 @@
-import re
 import logging
+import re
 from typing import Callable
+
 from fastapi import Request, Response, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
+
 from app.database import AsyncSessionLocal
 from app.services.ip_blocking import track_sensitive_url_attempt, block_ip
 
@@ -30,7 +32,7 @@ SENSITIVE_URL_PATTERNS = [
     r'configs',
     r'k8s',
     r'subdomains',
-    
+
     # Config and credential files
     r'\.aws',
     r'aws[-_]config',
@@ -52,7 +54,7 @@ SENSITIVE_URL_PATTERNS = [
     r'env\..*',
     r'\.production',
     r'\.dockerenv',
-    
+
     # Database and admin access
     r'phpmyadmin',
     r'php.*info',
@@ -64,7 +66,7 @@ SENSITIVE_URL_PATTERNS = [
     r'wp-admin',
     r'administrator',
     r'admin\.php',
-    
+
     # System/file access attempts
     r'\.ssh',
     r'\.vscode',
@@ -79,7 +81,7 @@ SENSITIVE_URL_PATTERNS = [
     r'console',
     r'wp-content',
     r'wp-includes',
-    
+
     # API and web vulnerabilities
     r'cgi-bin',
     r'owa/auth',
@@ -99,24 +101,24 @@ SENSITIVE_URL_PATTERNS = [
     r'portal/redlion',
     r'nmaplowercheck',
     r'logincheck',
-    
+
     # Cloud metadata access attempts
     r'latest/meta-data',
     r'169\.254\.169\.254',
-    
+
     # WebShells/Backdoors
     r'(sh|up|tz|token|time|test.*|temp|old_phpinfo|lindex|jo|inf|in|i)\.php$',
-    
+
     # Server Status and Diagnostics
     r'server[-_]status',
     r'status\.php',
     r'server[-_]info',
-    
+
     # Docker/Kubernetes
     r'docker[-_]',
     r'containers/json',
     r'pools/default/buckets',
-    
+
     # Authentication endpoints
     r'login\.(php|jsp|do|action|htm|html|aspx|cc)',
     r'logon\.',
@@ -131,17 +133,17 @@ COMPILED_PATTERNS = [re.compile(pattern, re.IGNORECASE) for pattern in SENSITIVE
 
 class SecurityMiddleware(BaseHTTPMiddleware):
     """Middleware to block access to sensitive URLs and track attempts."""
-    
+
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         # Get the request path
         path = request.url.path
         query_string = str(request.url.query)
         full_path = f"{path}?{query_string}" if query_string else path
-        
+
         # Get client IP and user agent
         client_ip = request.client.host if request.client else "unknown"
         user_agent = request.headers.get('user-agent', 'unknown')
-        
+
         # Check against sensitive patterns
         for pattern in COMPILED_PATTERNS:
             if pattern.search(full_path):
@@ -151,10 +153,10 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                     f"from IP: {client_ip} "
                     f"User-Agent: {user_agent}"
                 )
-                
+
                 # Track the attempt in Redis
                 should_block = await track_sensitive_url_attempt(client_ip, user_agent)
-                
+
                 # If threshold reached, block the IP in database
                 if should_block:
                     async with AsyncSessionLocal() as db:
@@ -167,14 +169,13 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                             )
                         except Exception as e:
                             logger.error(f"Error blocking IP {client_ip}: {str(e)}")
-                
+
                 # Return 404 Not Found (to not reveal that we're blocking)
                 return JSONResponse(
                     status_code=status.HTTP_404_NOT_FOUND,
                     content={"detail": "Not Found"}
                 )
-        
+
         # If no sensitive pattern matched, continue with the request
         response = await call_next(request)
         return response
-

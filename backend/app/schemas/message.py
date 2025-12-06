@@ -1,7 +1,8 @@
-from pydantic import BaseModel, Field
-from fastapi import UploadFile
 from datetime import datetime
 from typing import List, Optional, Dict, Any
+
+from fastapi import UploadFile
+from pydantic import BaseModel, Field
 
 
 class MessageBase(BaseModel):
@@ -11,7 +12,7 @@ class MessageBase(BaseModel):
 
 class MessageCreate(MessageBase):
     pass
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -28,7 +29,7 @@ class FileResponse(BaseModel):
     file_size: int
     file_url: str
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -42,7 +43,7 @@ class MessageResponse(BaseModel):
     files: List["FileResponse"] = []
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -50,11 +51,10 @@ class MessageResponse(BaseModel):
 class ChatRequest(BaseModel):
     content: str = Field(..., min_length=1, description="User message content")
     files: Optional[List[UploadFile]] = Field(None, description="Optional files")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
                 "content": "What is the capital of France?"
             }
         }
-

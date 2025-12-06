@@ -1,21 +1,18 @@
-from fastapi import FastAPI, Request, status, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
-from fastapi.staticfiles import StaticFiles
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
-from contextlib import asynccontextmanager
 import logging
 import os
+from contextlib import asynccontextmanager
 
+from fastapi import FastAPI, Request, status, HTTPException
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
+
+from app.api import auth, users, sessions, messages, models, transcribe
 from app.config import settings
 from app.database import init_db
-from app.api import auth, users, sessions, messages, models, transcribe
-from app.middleware.security import SecurityMiddleware
-from app.middleware.ip_blocking import IPBlockingMiddleware
-from app.utils.redis_client import close_redis
 from app.exceptions import (
     NotFoundError,
     UnauthorizedError,
@@ -24,8 +21,11 @@ from app.exceptions import (
     ConflictError,
     ValidationError
 )
-from app.utils.response import fail_response
+from app.middleware.ip_blocking import IPBlockingMiddleware
+from app.middleware.security import SecurityMiddleware
 from app.schemas.response import APIResponse
+from app.utils.redis_client import close_redis
+from app.utils.response import fail_response
 
 # Configure logging
 logging.basicConfig(
@@ -142,7 +142,7 @@ async def request_validation_handler(request: Request, exc: RequestValidationErr
         field = " -> ".join(str(loc) for loc in error.get("loc", []))
         msg = error.get("msg", "Validation error")
         error_messages.append(f"{field}: {msg}")
-    
+
     message = "Validation error: " + "; ".join(error_messages)
     return fail_response(
         message=message,
@@ -199,4 +199,3 @@ async def health_check():
         message="Service is healthy",
         data={"status": "healthy"}
     )
-

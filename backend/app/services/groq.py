@@ -1,15 +1,17 @@
+import json
+import logging
 import os
 from pathlib import Path
 from typing import List, Dict, Any, Optional
-from groq import Groq
+
 import httpx
-import json
+from groq import Groq
+
 from app.config import settings
 from app.exceptions import BadRequestError
-from app.utils.redis_client import get_redis_client
-from app.utils.cache_keys import MODELS_CACHE_KEY
 from app.prompts import SESSION_TITLE_SYSTEM_PROMPT, get_session_title_prompt
-import logging
+from app.utils.cache_keys import MODELS_CACHE_KEY
+from app.utils.redis_client import get_redis_client
 
 logger = logging.getLogger(__name__)
 
@@ -151,10 +153,10 @@ async def clear_models_cache():
 
 
 async def get_chat_completion(
-    messages: List[Dict[str, str]],
-    model: str = "llama-3.1-8b-instant",
-    temperature: float = 0.7,
-    max_tokens: Optional[int] = None
+        messages: List[Dict[str, str]],
+        model: str = "llama-3.1-8b-instant",
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None
 ) -> Dict[str, Any]:
     """Get chat completion from Groq API."""
     if not groq_client:
@@ -244,10 +246,10 @@ async def generate_session_title(message: str, model: str = "llama-3.1-8b-instan
 
 
 async def transcribe_audio(
-    audio_file_path: str,
-    language: Optional[str] = None,
-    temperature: float = 0.0,
-    response_format: str = "verbose_json"
+        audio_file_path: str,
+        language: Optional[str] = None,
+        temperature: float = 0.0,
+        response_format: str = "verbose_json"
 ) -> Dict[str, Any]:
     """
     Transcribe audio file to text using Groq's Whisper API.
@@ -274,7 +276,7 @@ async def transcribe_audio(
     """
     if not groq_client:
         raise BadRequestError("Groq API key not configured")
-    
+
     # Validate file exists
     if not os.path.exists(audio_file_path):
         raise FileNotFoundError(f"Audio file not found: {audio_file_path}")

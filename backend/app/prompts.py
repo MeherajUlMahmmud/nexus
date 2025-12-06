@@ -17,7 +17,6 @@ User message: {message}
 
 Title:"""
 
-
 # =============================================================================
 # Chat Completion (for future use)
 # =============================================================================
@@ -32,4 +31,3 @@ DEFAULT_SYSTEM_PROMPT = """You are a helpful, harmless, and honest AI assistant.
 def get_session_title_prompt(message: str) -> str:
     """Get the formatted prompt for generating a session title."""
     return SESSION_TITLE_USER_PROMPT.format(message=message)
-
