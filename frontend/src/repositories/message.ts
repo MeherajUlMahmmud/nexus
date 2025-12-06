@@ -9,16 +9,12 @@ export const MessageRepository = {
     /**
      * Send message (chat endpoint that gets AI response)
      */
-    sendChatMessage: async (sessionId: number, content: string): Promise<MessageResponse> => {
-        const response = await ApiHandler.sendPostRequest(API_ROUTES.MESSAGES.CHAT(sessionId), { content });
-        return response.data;
-    },
-
-    /**
-     * Send new message
-     */
-    sendNewMessage: async (message: string): Promise<MessageResponse> => {
-        const response = await ApiHandler.sendPostRequest(API_ROUTES.MESSAGES.NEW, { message });
+    sendChatMessage: async (sessionId: number, formData: FormData): Promise<MessageResponse> => {
+        const response = await ApiHandler.sendPostRequest(
+            API_ROUTES.MESSAGES.CHAT(sessionId), 
+            formData,
+            true,
+        );
         return response.data;
     },
 

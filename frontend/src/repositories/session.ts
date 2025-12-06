@@ -2,6 +2,7 @@ import { ApiHandler } from './apiHandler';
 import { API_ROUTES } from '@/lib/constants';
 import {
     SessionCreate,
+    SessionUpdate,
     SessionResponse,
     SessionsResponse,
 } from '@/lib/types';
@@ -26,6 +27,13 @@ export const SessionRepository = {
      */
     getSessionDetails: async (sessionId: number): Promise<SessionResponse> => {
         const response = await ApiHandler.sendGetRequest(API_ROUTES.SESSIONS.DETAILS(sessionId));
+        return response.data;
+    },
+    /**
+     * Update session
+     */
+    updateSession: async (sessionId: number, data: SessionUpdate): Promise<SessionResponse> => {
+        const response = await ApiHandler.sendPutRequest(API_ROUTES.SESSIONS.UPDATE(sessionId), data);
         return response.data;
     },
     /**

@@ -1,6 +1,7 @@
 import { ApiHandler } from './apiHandler';
 import { API_ROUTES } from '@/lib/constants';
 import {
+    APIResponse,
     LoginRequest,
     RegisterRequest,
     TokenResponse,
@@ -19,8 +20,9 @@ export const AuthRepository = {
     /**
      * Register new user
      */
-    register: async (data: RegisterRequest): Promise<void> => {
-        await ApiHandler.sendUnauthenticatedPostRequest(API_ROUTES.AUTH.REGISTER, data);
+    register: async (data: RegisterRequest): Promise<APIResponse> => {
+        const response = await ApiHandler.sendUnauthenticatedPostRequest(API_ROUTES.AUTH.REGISTER, data);
+        return response.data;
     },
 
     /**

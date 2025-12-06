@@ -81,6 +81,27 @@ async def get_session(
         raise
 
 
+@router.put("/{session_id}/update", response_model=APIResponse)
+async def update_session_endpoint(
+    session_id: int,
+    session_update: SessionUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update a chat session."""
+    logger.info(f"Update session requested - session_id: {session_id}, user_id: {current_user.id}")
+    try:
+        session = await update_session(db, session_id, current_user, session_update)
+        logger.info(f"Session updated successfully - session_id: {session_id}, user_id: {current_user.id}")
+        return success_response(
+            message="Session updated successfully",
+            data=session.model_dump()
+        )
+    except Exception as e:
+        logger.warning(f"Failed to update session - session_id: {session_id}, user_id: {current_user.id} - Error: {str(e)}")
+        raise
+
+
 @router.delete("/{session_id}/delete", response_model=APIResponse, status_code=status.HTTP_200_OK)
 async def delete_session_endpoint(
     session_id: int,

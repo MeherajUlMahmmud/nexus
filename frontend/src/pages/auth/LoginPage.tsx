@@ -101,7 +101,7 @@ export default function LoginPage() {
               <Input
                 id="username"
                 type="text"
-                placeholder="username or email@example.com"
+                placeholder="Enter your email or username"
                 value={usernameOrEmail}
                 onChange={handleUsernameChange}
                 onKeyPress={handleKeyPress}

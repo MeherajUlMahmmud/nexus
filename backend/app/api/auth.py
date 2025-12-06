@@ -26,7 +26,6 @@ async def register(
         logger.info(f"User registered successfully - user_id: {user.id}, username: {user.username}, email: {user.email}")
         return success_response(
             message="User registered successfully",
-            data=user.model_dump()
         )
     except Exception as e:
         logger.error(f"Registration failed for username: {user_data.username}, email: {user_data.email} - Error: {str(e)}")

@@ -8,6 +8,7 @@ from app.config import settings
 from app.exceptions import BadRequestError
 from app.utils.redis_client import get_redis_client
 from app.utils.cache_keys import MODELS_CACHE_KEY
+from app.prompts import SESSION_TITLE_SYSTEM_PROMPT, get_session_title_prompt
 import logging
 
 logger = logging.getLogger(__name__)
@@ -213,20 +214,11 @@ async def generate_session_title(message: str, model: str = "llama-3.1-8b-instan
         return message[:50] + "..." if len(message) > 50 else message
 
     try:
-        # Create a prompt to generate a concise title
-        prompt = f"""Generate a concise, descriptive title (maximum 50 characters) for a chat session based on this user message. 
-The title should be a short phrase that captures the main topic or question. 
-Do not include quotes, colons, or special formatting. Just return the title text.
-
-User message: {message}
-
-Title:"""
-
         response = groq_client.chat.completions.create(
             model=model,
             messages=[
-                {"role": "system", "content": "You are a helpful assistant that generates concise, descriptive titles for chat sessions."},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": SESSION_TITLE_SYSTEM_PROMPT},
+                {"role": "user", "content": get_session_title_prompt(message)}
             ],
             temperature=0.3,
             max_tokens=50,

@@ -2,11 +2,13 @@ from fastapi import FastAPI, Request, status, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from contextlib import asynccontextmanager
 import logging
+import os
 
 from app.config import settings
 from app.database import init_db
@@ -165,6 +167,12 @@ app.include_router(sessions.router)
 app.include_router(messages.router)
 app.include_router(models.router)
 app.include_router(transcribe.router)
+
+# Serve uploaded files as static files
+UPLOAD_DIR = "uploads"
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 
 @app.get("/", tags=["Root"], response_model=APIResponse)

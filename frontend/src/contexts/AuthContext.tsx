@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { RegisterRequest, User } from '@/lib/types';
 import { storage } from '@/lib/storage';
 import { APP_ROUTES } from '@/lib/constants';
 import { AuthRepository } from '@/repositories/auth';
+import { toast } from 'sonner';
 
 interface AuthContextType {
     user: User | null;
@@ -64,6 +66,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // Set up axios interceptor to handle 401 responses
+    useEffect(() => {
+        const interceptor = axios.interceptors.response.use(
+            (response) => response,
+            (error) => {
+                if (error.response?.status === 401) {
+                    // Logout user on 401 Unauthorized
+                    storage.clearAuth();
+                    setUser(null);
+                    navigate(APP_ROUTES.LOGIN, { replace: true });
+                }
+                return Promise.reject(error);
+            }
+        );
+
+        return () => {
+            axios.interceptors.response.eject(interceptor);
+        };
+    }, [navigate]);
+
     const login = async (usernameOrEmail: string, password: string) => {
         try {
             setLoading(true);
@@ -94,21 +116,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const register = async (registerRequest: RegisterRequest) => {
-        // try {
-        //   setLoading(true);
-        //   const response = await AuthRepository.register(registerRequest);
-
-        //   setUser(response.user);
-
-        //   storage.setUser(response.user);
-
-        //   setLoading(false);
-
-        //   navigate(APP_ROUTES.HOME, { replace: true });
-        // } catch (error) {
-        //   setLoading(false);
-        //   throw new Error('Failed to register');
-        // }
+        try {
+            setLoading(true);
+            const response = await AuthRepository.register(registerRequest);
+            console.log('response', response);
+            if (response && response.status === "SUCCESS") {
+                toast.success('Registration successful');
+                setLoading(false);
+                navigate(APP_ROUTES.LOGIN, { replace: true });
+            } else if (response && response.status === "FAIL") {
+                toast.error(response.message);
+                throw new Error(response.message);
+            } else {
+                toast.error('Failed to register');
+                throw new Error('Failed to register');
+            }
+        } catch (error) {
+            setLoading(false);
+            toast.error('Failed to register');
+            throw new Error('Failed to register');
+        }
     };
 
     const logout = async () => {

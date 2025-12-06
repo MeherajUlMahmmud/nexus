@@ -1,6 +1,7 @@
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from app.models.message import Message
 from app.models.session import ChatSession
 from app.models.user import User
@@ -26,9 +27,10 @@ async def get_session_messages(
     if session.user_id != user.id:
         raise ForbiddenError("You don't have access to this session")
     
-    # Get messages
+    # Get messages with files eagerly loaded
     result = await db.execute(
         select(Message)
+        .options(selectinload(Message.files))
         .where(Message.session_id == session_id)
         .order_by(Message.created_at)
     )

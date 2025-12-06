@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from app.models.session import ChatSession
+from app.models.message import Message
 from app.models.user import User
 from app.schemas.session import SessionCreate, SessionUpdate, SessionResponse, SessionListResponse
 from app.exceptions import NotFoundError, ForbiddenError
@@ -74,10 +75,10 @@ async def get_session_by_id(
     session_id: int,
     user: User
 ) -> SessionResponse:
-    """Get a specific chat session with messages."""
+    """Get a specific chat session with messages and their files."""
     result = await db.execute(
         select(ChatSession)
-        .options(selectinload(ChatSession.messages))
+        .options(selectinload(ChatSession.messages).selectinload(Message.files))
         .where(ChatSession.id == session_id)
     )
     session = result.scalar_one_or_none()
@@ -115,9 +116,17 @@ async def update_session(
         session.model_name = session_update.model_name
     
     await db.commit()
-    await db.refresh(session)
     
-    return SessionResponse.model_validate(session)
+    # Return without messages to avoid lazy loading issues
+    return SessionResponse(
+        id=session.id,
+        user_id=session.user_id,
+        title=session.title,
+        model_name=session.model_name,
+        created_at=session.created_at,
+        updated_at=session.updated_at,
+        messages=None
+    )
 
 
 async def delete_session(

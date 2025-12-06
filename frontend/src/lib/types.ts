@@ -55,12 +55,22 @@ export interface MessageResponse extends APIResponse<Message> {}
 
 export interface MessagesResponse extends APIResponse<Message[]> {}
 
+export interface FileAttachment {
+  id: number;
+  filename: string;
+  file_type: string;
+  file_size: number;
+  file_url: string;
+  created_at: string;
+}
+
 export interface Message {
   id: number;
   session_id: number;
   role: 'user' | 'assistant';
   content: string;
   extra_metadata?: Record<string, any>;
+  files?: FileAttachment[];
   created_at: string;
   updated_at: string;
 }
@@ -69,6 +79,11 @@ export interface SessionCreate {
   title?: string;
   model_name?: string;
   message?: string;
+}
+
+export interface SessionUpdate {
+  title?: string;
+  model_name?: string;
 }
 
 export interface ChatRequest {

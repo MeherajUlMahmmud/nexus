@@ -83,13 +83,29 @@ export class ApiHandler {
         }
     }
 
-    static async sendDeleteRequest(url: string, signal?: AbortSignal) {
+    static async sendPutRequest(url: string, data: any, hasFile = false, signal?: AbortSignal) {
+        try {
+            const response = await axios.put(url, data, {
+                headers: {
+                    "Content-Type": hasFile ? "multipart/form-data" : "application/json",
+                    "Authorization": `Bearer ${storage.getAccessToken()}`
+                },
+                signal
+            });
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async sendDeleteRequest(url: string, data?: any, signal?: AbortSignal) {
         try {
             const response = await axios.delete(url, {
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${storage.getAccessToken()}`
                 },
+                data,
                 signal
             });
             return response;

@@ -16,6 +16,7 @@ export const API_ROUTES = {
     LIST: `${API_BASE_URL}/sessions/list`,
     CREATE: `${API_BASE_URL}/sessions/create`,
     DETAILS: (id: number) => `${API_BASE_URL}/sessions/${id}/details`,
+    UPDATE: (id: number) => `${API_BASE_URL}/sessions/${id}/update`,
     DELETE: (id: number) => `${API_BASE_URL}/sessions/${id}/delete`,
   },
   // Message routes

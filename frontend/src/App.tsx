@@ -10,6 +10,8 @@ import LoginPage from '@/pages/auth/LoginPage';
 import RegisterPage from '@/pages/auth/RegisterPage';
 import ChatPage from '@/pages/chat/ChatPage';
 import ChatSessionPage from '@/pages/chat/ChatSessionPage';
+import ProfilePage from '@/pages/profile/ProfilePage';
+import SettingsPage from '@/pages/profile/SettingsPage';
 
 function App() {
     return (
@@ -23,6 +25,8 @@ function App() {
                         </Route>
                         <Route element={<AppLayout />}>
                             <Route path={APP_ROUTES.HOME} element={<ChatPage />} />
+                            <Route path={APP_ROUTES.PROFILE} element={<ProfilePage />} />
+                            <Route path={APP_ROUTES.SETTINGS} element={<SettingsPage />} />
                             <Route path="/:sessionId" element={<ChatSessionPage />} />
                         </Route>
                         <Route path="*" element={<Navigate to={APP_ROUTES.HOME} replace />} />

@@ -16,8 +16,8 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { LogOut, Plus, MoreVertical, Trash2, PanelLeftClose, Menu } from "lucide-react";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { LogOut, Plus, MoreVertical, Trash2, PanelLeftClose } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { memo, useCallback, useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -28,21 +28,32 @@ import { APP_ROUTES } from "@/lib/constants";
 interface ChatSidebarProps {
     currentSessionId?: number;
     onSessionClick?: (sessionId: number) => void;
+    mobileMenuOpen?: boolean;
+    onMobileMenuOpenChange?: (open: boolean) => void;
 }
 
 const SIDEBAR_STORAGE_KEY = 'chat-sidebar-collapsed';
 
-export const ChatSidebar = memo(function ChatSidebar({ currentSessionId, onSessionClick }: ChatSidebarProps) {
+export const ChatSidebar = memo(function ChatSidebar({
+    currentSessionId,
+    onSessionClick,
+    mobileMenuOpen: externalMobileMenuOpen,
+    onMobileMenuOpenChange
+}: ChatSidebarProps) {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
     const { sessions, loading: sessionsLoading, deleteSession } = useSession();
     const [sessionToDelete, setSessionToDelete] = useState<number | null>(null);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [showLogoutDialog, setShowLogoutDialog] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(() => {
         const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY);
         return stored === 'true';
     });
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [internalMobileMenuOpen, setInternalMobileMenuOpen] = useState(false);
+
+    const mobileMenuOpen = externalMobileMenuOpen !== undefined ? externalMobileMenuOpen : internalMobileMenuOpen;
+    const setMobileMenuOpen = onMobileMenuOpenChange || setInternalMobileMenuOpen;
 
     useEffect(() => {
         localStorage.setItem(SIDEBAR_STORAGE_KEY, String(isCollapsed));
@@ -91,7 +102,7 @@ export const ChatSidebar = memo(function ChatSidebar({ currentSessionId, onSessi
     const SidebarContent = () => (
         <div className="flex flex-col h-full space-y-3 p-2">
             <div className="flex flex-col space-y-3 py-2 border-b border-border">
-                <div className="flex justify-between items-center gap-2">
+                <div className={`flex items-center gap-2 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
                     <Link
                         to={APP_ROUTES.HOME}
                         className="flex items-center gap-2 border px-2.5 py-0.5 rounded-md bg-black text-white"
@@ -112,20 +123,27 @@ export const ChatSidebar = memo(function ChatSidebar({ currentSessionId, onSessi
                         </Button>
                     )}
                 </div>
-                {isCollapsed ? (
-                    <Button variant="outline" className="w-full" asChild>
-                        <Link to={APP_ROUTES.HOME} className="flex items-center" onClick={() => setMobileMenuOpen(false)}>
-                            <Plus className="size-4" />
-                        </Link>
-                    </Button>
-                ) : (
-                    <Button variant="outline" className="w-full" asChild>
-                        <Link to={APP_ROUTES.HOME} onClick={() => setMobileMenuOpen(false)}>
-                            <Plus className="size-4" />
-                            New Chat
-                        </Link>
-                    </Button>
-                )}
+                <div className="flex justify-center w-full gap-2">
+                    {isCollapsed ? (
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="w-full"
+                            asChild
+                        >
+                            <Link to={APP_ROUTES.HOME} className="flex items-center" onClick={() => setMobileMenuOpen(false)}>
+                                <Plus className="size-5" />
+                            </Link>
+                        </Button>
+                    ) : (
+                        <Button variant="outline" className="w-full" asChild>
+                            <Link to={APP_ROUTES.HOME} onClick={() => setMobileMenuOpen(false)}>
+                                <Plus className="size-4" />
+                                New Chat
+                            </Link>
+                        </Button>
+                    )}
+                </div>
             </div>
             <div className="flex-1 overflow-hidden min-h-0">
                 {!isCollapsed && (
@@ -187,7 +205,7 @@ export const ChatSidebar = memo(function ChatSidebar({ currentSessionId, onSessi
             <div className="py-2 border-t border-border">
                 {!isCollapsed ? (
                     <>
-                        <div className="flex items-center gap-2 mb-2">
+                        <Link to={APP_ROUTES.PROFILE} className="flex items-center gap-2 mb-2">
                             <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center">
                                 <span className="text-sm font-medium">
                                     {user?.name?.charAt(0).toUpperCase()}
@@ -199,26 +217,28 @@ export const ChatSidebar = memo(function ChatSidebar({ currentSessionId, onSessi
                                     {user?.email}
                                 </div>
                             </div>
+                        </Link>
+                        <div className="flex flex-col gap-2">
+                            <Button variant="outline" className="w-full" onClick={() => setShowLogoutDialog(true)}>
+                                <LogOut className="size-4 rotate-180 mr-2" />
+                                Logout
+                            </Button>
                         </div>
-                        <Button variant="outline" className="w-full" onClick={() => { logout(); setMobileMenuOpen(false); }}>
-                            <LogOut className="size-4 rotate-180" />
-                            Logout
-                        </Button>
                     </>
                 ) : (
                     <div className="flex flex-col items-center gap-2">
-                        <div
+                        <Link
+                            to={APP_ROUTES.PROFILE}
                             className="size-8 rounded-full bg-primary/10 flex items-center justify-center cursor-pointer"
-                            title={user?.email || undefined}
                         >
                             <span className="text-sm font-medium">
                                 {user?.name?.charAt(0).toUpperCase()}
                             </span>
-                        </div>
+                        </Link>
                         <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => { logout(); setMobileMenuOpen(false); }}
+                            onClick={() => setShowLogoutDialog(true)}
                             title="Logout"
                         >
                             <LogOut className="size-4 rotate-180" />
@@ -231,17 +251,8 @@ export const ChatSidebar = memo(function ChatSidebar({ currentSessionId, onSessi
 
     return (
         <>
-            {/* Mobile Menu Button */}
+            {/* Mobile Sheet */}
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                <SheetTrigger asChild>
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        className="lg:hidden fixed top-4 left-4 z-50 bg-background shadow-lg"
-                    >
-                        <Menu className="size-4" />
-                    </Button>
-                </SheetTrigger>
                 <SheetContent side="left" className="p-0 w-64">
                     <div className="flex flex-col h-full">
                         <SidebarContent />
@@ -273,6 +284,29 @@ export const ChatSidebar = memo(function ChatSidebar({ currentSessionId, onSessi
                             className="bg-destructive hover:bg-destructive/90"
                         >
                             Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Logout</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to logout? You will need to login again to access your account.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => {
+                                logout();
+                                setMobileMenuOpen(false);
+                                setShowLogoutDialog(false);
+                            }}
+                        >
+                            Logout
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
