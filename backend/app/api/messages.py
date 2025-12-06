@@ -6,6 +6,7 @@ from typing import List
 from fastapi import APIRouter, Depends, status, Form, File as FastAPIFile, UploadFile, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agents.validation import ValidationAgent
 from app.database import get_db
 from app.exceptions import NotFoundError, ForbiddenError
 from app.models.user import User
@@ -29,6 +30,9 @@ from app.utils.response import fail_response, success_response
 logger = logging.getLogger(__name__)
 router = APIRouter(
     prefix="/api/sessions/{session_id}/messages", tags=["Messages"])
+
+# Initialize validation agent
+validation_agent = ValidationAgent()
 
 # Create the upload directory if it doesn't exist
 UPLOAD_DIR = "uploads"
@@ -82,6 +86,31 @@ async def chat(
     try:
         # Validate session
         session = await validate_session(db, session_id, current_user)
+
+        # Validate user query for security threats
+        validation_context = {
+            "user_id": current_user.id,
+            "session_id": session_id,
+            "client_ip": get_client_ip(request) if request else None
+        }
+        query_validation = await validation_agent.validate_query(content, validation_context)
+
+        if query_validation.status.value == "blocked":
+            logger.warning(
+                f"[QUERY_BLOCKED] Query validation failed - session_id: {session_id}, "
+                f"user_id: {current_user.id}, severity: {query_validation.severity_score:.2f}, "
+                f"issues: {query_validation.issues}"
+            )
+            raise ForbiddenError(
+                detail=f"Query blocked: {query_validation.message}. "
+                f"Issues: {', '.join(query_validation.issues[:3])}"
+            )
+        elif query_validation.status.value == "warning":
+            logger.warning(
+                f"[QUERY_WARNING] Query validation warning - session_id: {session_id}, "
+                f"user_id: {current_user.id}, severity: {query_validation.severity_score:.2f}, "
+                f"issues: {query_validation.issues}"
+            )
 
         # Get existing messages for context
         logger.debug(f"[CHAT_CONTEXT] Loading conversation history - session_id: {session_id}")
@@ -145,6 +174,33 @@ async def chat(
             )
         else:
             groq_metadata = {}
+
+        # Validate AI response for safety and quality
+        response_validation_context = {
+            "user_id": current_user.id,
+            "session_id": session_id,
+            "client_ip": get_client_ip(request) if request else None
+        }
+        response_validation = await validation_agent.validate_response(
+            final_response_content, content, response_validation_context
+        )
+
+        if response_validation.status.value == "blocked":
+            logger.warning(
+                f"[RESPONSE_BLOCKED] Response validation failed - session_id: {session_id}, "
+                f"user_id: {current_user.id}, severity: {response_validation.severity_score:.2f}, "
+                f"issues: {response_validation.issues}"
+            )
+            raise ForbiddenError(
+                detail=f"Response blocked: {response_validation.message}. "
+                f"Issues: {', '.join(response_validation.issues[:3])}"
+            )
+        elif response_validation.status.value == "warning":
+            logger.warning(
+                f"[RESPONSE_WARNING] Response validation warning - session_id: {session_id}, "
+                f"user_id: {current_user.id}, severity: {response_validation.severity_score:.2f}, "
+                f"issues: {response_validation.issues}"
+            )
 
         # Create response metadata
         response_metadata = {
