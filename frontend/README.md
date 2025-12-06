@@ -1,38 +1,49 @@
 # Nexus Frontend
 
-A React + Vite + TypeScript application with shadcn/ui and Tailwind CSS v4.
+A modern React application built with Vite, TypeScript, and shadcn/ui for the Nexus AI chat platform.
 
-## Tech Stack
+## 🚀 Tech Stack
 
-- **React 19** - UI library
-- **Vite 6** - Build tool and dev server
-- **TypeScript** - Type safety
-- **React Router** - Client-side routing
-- **shadcn/ui** - UI component library
-- **Tailwind CSS v4** - Styling
-- **Lucide React** - Icons
+- **React 19** - Modern UI library with latest features
+- **Vite 6** - Fast build tool and dev server
+- **TypeScript** - Type-safe development
+- **React Router 7** - Client-side routing
+- **shadcn/ui** - Beautiful, accessible UI components
+- **Tailwind CSS v4** - Utility-first CSS framework
+- **Axios** - HTTP client for API requests
+- **React Hook Form** - Form state management
+- **Zod** - Schema validation
+- **Sonner** - Toast notifications
+- **Lucide React** - Icon library
+- **React Markdown** - Markdown rendering for AI responses
 
-## Getting Started
+## 📋 Prerequisites
 
-### Prerequisites
+- **Node.js** 18+ (recommended: 20+)
+- **npm** or **yarn** or **pnpm**
 
-- Node.js 18+ and npm
+## 🛠️ Installation
 
-### Installation
+1. Navigate to the frontend directory:
+```bash
+cd frontend
+```
 
+2. Install dependencies:
 ```bash
 npm install
 ```
 
-### Environment Variables
+## ⚙️ Environment Variables
 
-Create a `.env` file in the root directory:
+Create a `.env` file in the `frontend` directory:
 
 ```env
-VITE_API_URL=http://localhost:8000
+# Backend API URL
+VITE_API_URL=http://localhost:8000/api
 ```
 
-### Development
+## 🏃 Development
 
 Start the development server:
 
@@ -40,9 +51,15 @@ Start the development server:
 npm run dev
 ```
 
-The app will be available at `http://localhost:3000`
+The application will be available at `http://localhost:5173` (or the next available port).
 
-### Build
+### Development Features
+
+- **Hot Module Replacement (HMR)** - Instant updates during development
+- **TypeScript** - Full type checking
+- **ESLint** - Code linting and quality checks
+
+## 🏗️ Build
 
 Build for production:
 
@@ -50,48 +67,126 @@ Build for production:
 npm run build
 ```
 
-The production build will be in the `dist` directory.
+The production build will be in the `dist` directory, optimized and minified.
 
-### Preview Production Build
+## 👀 Preview Production Build
+
+Preview the production build locally:
 
 ```bash
 npm run preview
 ```
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 frontend/
 ├── src/
-│   ├── components/     # React components
-│   │   ├── auth/       # Authentication components
-│   │   ├── chat/       # Chat interface components
-│   │   ├── layout/     # Layout components
-│   │   └── ui/         # shadcn/ui components
-│   ├── contexts/       # React contexts
-│   ├── hooks/          # Custom React hooks
-│   ├── lib/            # Utility functions and API client
-│   ├── pages/          # Page components
-│   ├── App.tsx         # Main app component with routing
-│   ├── main.tsx        # Entry point
-│   └── index.css       # Global styles
-├── public/             # Static assets
-├── index.html          # HTML template
-├── vite.config.ts      # Vite configuration
-├── tsconfig.json       # TypeScript configuration
-└── package.json        # Dependencies
+│   ├── components/          # React components
+│   │   ├── auth/           # Authentication components
+│   │   │   ├── AuthGuard.tsx
+│   │   │   └── RegisterForm.tsx
+│   │   ├── chat/           # Chat interface components
+│   │   │   ├── ChatHeader.tsx
+│   │   │   ├── ChatInputArea.tsx
+│   │   │   ├── MessageItem.tsx
+│   │   │   └── ...
+│   │   ├── layout/          # Layout components
+│   │   │   ├── AppLayout.tsx
+│   │   │   ├── AuthLayout.tsx
+│   │   │   └── ChatSidebar.tsx
+│   │   └── ui/              # shadcn/ui components (53 components)
+│   ├── contexts/            # React contexts
+│   │   ├── AuthContext.tsx  # Authentication state
+│   │   ├── ModelContext.tsx # AI model selection
+│   │   └── SessionContext.tsx # Chat session management
+│   ├── hooks/               # Custom React hooks
+│   │   └── use-mobile.ts    # Mobile detection hook
+│   ├── lib/                 # Utility functions and constants
+│   │   ├── constants.ts     # API routes and app routes
+│   │   ├── storage.ts       # LocalStorage utilities
+│   │   ├── types.ts         # TypeScript type definitions
+│   │   └── utils.ts         # Helper functions
+│   ├── pages/               # Page components
+│   │   ├── auth/            # Authentication pages
+│   │   │   ├── LoginPage.tsx
+│   │   │   └── RegisterPage.tsx
+│   │   ├── chat/            # Chat pages
+│   │   │   ├── ChatPage.tsx
+│   │   │   └── ChatSessionPage.tsx
+│   │   └── profile/         # User profile pages
+│   │       ├── ProfilePage.tsx
+│   │       ├── SettingsPage.tsx
+│   │       └── AccountSettingsPage.tsx
+│   ├── repositories/        # API client layer
+│   │   ├── apiHandler.ts    # HTTP request handler with token refresh
+│   │   ├── auth.ts          # Authentication API
+│   │   ├── message.ts       # Messages API
+│   │   ├── session.ts       # Sessions API
+│   │   ├── user.ts          # User API
+│   │   ├── models.ts        # AI models API
+│   │   └── transcribe.ts    # Transcription API
+│   ├── App.tsx              # Main app component with routing
+│   ├── main.tsx             # Application entry point
+│   └── index.css            # Global styles
+├── public/                  # Static assets
+├── index.html               # HTML template
+├── vite.config.ts           # Vite configuration
+├── tsconfig.json            # TypeScript configuration
+├── postcss.config.mjs        # PostCSS configuration
+├── components.json          # shadcn/ui configuration
+└── package.json             # Dependencies and scripts
 ```
 
-## Features
+## ✨ Features
 
-- User authentication (login/register)
-- Chat interface with AI
-- Session management
-- Responsive design
-- Dark mode support (via next-themes)
+### Authentication
+- **User Registration** - Create new accounts
+- **User Login** - Secure authentication
+- **Token Management** - Automatic access token refresh
+  - Access tokens valid for 2 hours
+  - Refresh tokens valid for 30 days
+  - Automatic token refresh on 401 errors
+  - Queue system for concurrent requests during refresh
+- **Protected Routes** - Route guards for authenticated pages
+- **Session Persistence** - Maintains login state across page refreshes
 
-## API Integration
+### Chat Interface
+- **AI Conversations** - Chat with various AI models
+- **Session Management** - Create, view, and manage chat sessions
+- **Message History** - View conversation history
+- **File Attachments** - Upload and attach text files to messages
+- **Markdown Rendering** - Rich text rendering for AI responses
+- **Message Metadata** - View tool usage and model information
+- **Real-time Updates** - Instant message display
 
-The app communicates directly with the backend API. The API base URL is configured via the `VITE_API_URL` environment variable.
+### User Experience
+- **Responsive Design** - Works on desktop, tablet, and mobile
+- **Toast Notifications** - User feedback for actions
+- **Loading States** - Visual feedback during API calls
+- **Error Handling** - Graceful error messages and recovery
 
-All API requests include credentials (cookies) for authentication.
+## 🔌 API Integration
+
+The frontend communicates with the backend API through a repository pattern:
+
+- **API Handler** (`apiHandler.ts`) - Centralized HTTP client with:
+  - Automatic token injection
+  - Token refresh on 401 errors
+  - Request/response interceptors
+  - Error handling
+
+- **Repositories** - Domain-specific API clients:
+  - `auth.ts` - Authentication endpoints
+  - `message.ts` - Chat messages
+  - `session.ts` - Chat sessions
+  - `user.ts` - User management
+  - `models.ts` - AI models
+  - `transcribe.ts` - Audio transcription
+
+## 🎨 Styling
+
+- **Tailwind CSS v4** - Utility-first CSS
+- **shadcn/ui** - Pre-built accessible components
+- **CSS Variables** - Theme customization
+- **Responsive Breakpoints** - Mobile-first design
