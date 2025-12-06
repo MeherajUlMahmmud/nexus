@@ -10,7 +10,8 @@ class Settings(BaseSettings):
     # JWT Settings
     secret_key: str = "your-secret-key-here-change-in-production"
     algorithm: str = "HS256"
-    access_token_expire_minutes: int = 30
+    access_token_expire_minutes: int = 120  # 2 hours
+    refresh_token_expire_days: int = 30  # 30 days
 
     # Groq API
     groq_api_key: str = ""

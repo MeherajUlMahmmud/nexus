@@ -29,16 +29,18 @@ export const AuthRepository = {
      * Logout user
      */
     logout: async (refreshToken: string): Promise<void> => {
-        await ApiHandler.sendPostRequest(API_ROUTES.AUTH.LOGOUT, {
-            refresh: refreshToken,
+        await ApiHandler.sendUnauthenticatedPostRequest(API_ROUTES.AUTH.LOGOUT, {
+            refresh_token: refreshToken,
         });
     },
 
     /**
      * Refresh access token
      */
-    refreshToken: async (refreshToken: string): Promise<{ access: string }> => {
-        const response = await ApiHandler.sendPostRequest(API_ROUTES.AUTH.REFRESH, { refresh: refreshToken });
+    refreshToken: async (refreshToken: string): Promise<TokenResponse> => {
+        const response = await ApiHandler.sendUnauthenticatedPostRequest(API_ROUTES.AUTH.REFRESH, { 
+            refresh_token: refreshToken 
+        });
         return response.data;
     },
 

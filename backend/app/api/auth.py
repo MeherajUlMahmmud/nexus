@@ -5,10 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.user import User
-from app.schemas.auth import Register, Login
+from app.schemas.auth import Register, Login, RefreshTokenRequest
 from app.schemas.response import APIResponse
 from app.schemas.user import UserResponse
-from app.services.auth import register_user, login_user, refresh_token
+from app.services.auth import register_user, login_user, refresh_access_token, revoke_refresh_token
 from app.utils.dependencies import get_current_user
 from app.utils.response import success_response
 
@@ -59,20 +59,38 @@ async def login(
 
 @router.post("/refresh", response_model=APIResponse)
 async def refresh(
-        current_user: User = Depends(get_current_user),
+        refresh_data: RefreshTokenRequest,
         db: AsyncSession = Depends(get_db)
 ):
-    """Refresh JWT token."""
-    logger.info(f"Token refresh requested for user_id: {current_user.id}, username: {current_user.username}")
+    """Refresh access token using refresh token."""
+    logger.info(f"Token refresh requested")
     try:
-        token_data = await refresh_token(db, current_user)
-        logger.info(f"Token refreshed successfully for user_id: {current_user.id}")
+        token_data = await refresh_access_token(db, refresh_data.refresh_token)
+        logger.info(f"Token refreshed successfully")
         return success_response(
             message="Token refreshed successfully",
             data=token_data.model_dump()
         )
     except Exception as e:
-        logger.error(f"Token refresh failed for user_id: {current_user.id} - Error: {str(e)}")
+        logger.warning(f"Token refresh failed - Error: {str(e)}")
+        raise
+
+
+@router.post("/logout", response_model=APIResponse)
+async def logout(
+        refresh_data: RefreshTokenRequest,
+        db: AsyncSession = Depends(get_db)
+):
+    """Revoke refresh token (logout)."""
+    logger.info(f"Logout requested")
+    try:
+        await revoke_refresh_token(db, refresh_data.refresh_token)
+        logger.info(f"Refresh token revoked successfully")
+        return success_response(
+            message="Logged out successfully"
+        )
+    except Exception as e:
+        logger.error(f"Logout failed - Error: {str(e)}")
         raise
 
 

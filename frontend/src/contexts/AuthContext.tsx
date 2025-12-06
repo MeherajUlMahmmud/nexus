@@ -66,16 +66,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Set up axios interceptor to handle 401 responses
+    // Set up axios interceptor to handle 401 responses (fallback if refresh fails)
     useEffect(() => {
         const interceptor = axios.interceptors.response.use(
             (response) => response,
-            (error) => {
+            async (error) => {
                 if (error.response?.status === 401) {
-                    // Logout user on 401 Unauthorized
-                    storage.clearAuth();
-                    setUser(null);
-                    navigate(APP_ROUTES.LOGIN, { replace: true });
+                    // Only clear auth if refresh token is also invalid/expired
+                    // The apiHandler will try to refresh first
+                    const refreshToken = storage.getRefreshToken();
+                    if (!refreshToken) {
+                        storage.clearAuth();
+                        setUser(null);
+                        navigate(APP_ROUTES.LOGIN, { replace: true });
+                    }
                 }
                 return Promise.reject(error);
             }
@@ -99,9 +103,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             // Double check response success
             if (response && response.status === "SUCCESS") {
+                storage.setTokenResponse(response);
                 setUser(response.data.user);
-                storage.setUser(response.data.user);
-                storage.setAccessToken(response.data.access_token);
                 setLoading(false);
                 navigate(APP_ROUTES.HOME, { replace: true });
             } else if (response && response.status === "FAIL") {
@@ -139,14 +142,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const logout = async () => {
-        // try {
-        //   await AuthRepository.logout(storage.getRefreshToken() || '');
-        // } catch (error) {
-        //   console.error('Failed to logout:', error);
-        // }
-        storage.clearAuth();
-        setUser(null);
-        navigate(APP_ROUTES.LOGIN);
+        try {
+            const refreshToken = storage.getRefreshToken();
+            if (refreshToken) {
+                await AuthRepository.logout(refreshToken);
+            }
+        } catch (error) {
+            console.error('Failed to logout:', error);
+        } finally {
+            storage.clearAuth();
+            setUser(null);
+            navigate(APP_ROUTES.LOGIN);
+        }
     };
 
     return (

@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 import bcrypt
+import secrets
 from app.config import settings
 
 
@@ -37,4 +38,15 @@ def verify_token(token: str) -> Optional[dict]:
         return payload
     except JWTError:
         return None
+
+
+def create_refresh_token() -> str:
+    """Create a secure random refresh token."""
+    return secrets.token_urlsafe(32)
+
+
+def verify_refresh_token(token: str) -> bool:
+    """Verify refresh token format (basic validation)."""
+    # Refresh tokens are random strings, so we just check they're not empty
+    return bool(token and len(token) > 0)
 
