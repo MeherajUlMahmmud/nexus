@@ -24,14 +24,12 @@ from app.exceptions import (
 from app.middleware.ip_blocking import IPBlockingMiddleware
 from app.middleware.security import SecurityMiddleware
 from app.schemas.response import APIResponse
+from app.utils.logging_config import setup_logging
 from app.utils.redis_client import close_redis
 from app.utils.response import fail_response
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO if settings.environment == "development" else logging.WARNING,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+# Configure logging with daily rotation and 30-day retention
+setup_logging(log_dir=settings.log_dir, log_level=settings.log_level)
 logger = logging.getLogger(__name__)
 
 # Rate limiter

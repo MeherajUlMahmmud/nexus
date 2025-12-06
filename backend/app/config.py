@@ -14,7 +14,11 @@ class Settings(BaseSettings):
 
     # Groq API
     groq_api_key: str = ""
-
+    
+    # Tools
+    tools_enabled: bool = True
+    openweathermap_api_key: str = ""
+    
     # CORS
     cors_origins: List[str] = ["http://localhost:3000", "http://localhost:5173"]
 
@@ -32,6 +36,10 @@ class Settings(BaseSettings):
 
     # Environment
     environment: str = "development"
+    
+    # Logging
+    log_dir: str = "logs"
+    log_level: str = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
 
     class Config:
         env_file = ".env"

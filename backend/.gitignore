@@ -50,8 +50,9 @@ htmlcov/
 .tox/
 
 # Logs
-*.log
 logs/
+*.log
+*.log.*
 
 # OS
 .DS_Store

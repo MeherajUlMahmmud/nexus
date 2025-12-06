@@ -156,9 +156,28 @@ async def get_chat_completion(
         messages: List[Dict[str, str]],
         model: str = "llama-3.1-8b-instant",
         temperature: float = 0.7,
-        max_tokens: Optional[int] = None
+        max_tokens: Optional[int] = None,
+        tools: Optional[List[Dict[str, Any]]] = None,
+        tool_choice: Optional[str] = None
 ) -> Dict[str, Any]:
-    """Get chat completion from Groq API."""
+    """
+    Get chat completion from Groq API with optional function calling support.
+    
+    Args:
+        messages: List of message dicts with 'role' and 'content'
+        model: Model name
+        temperature: Sampling temperature
+        max_tokens: Maximum tokens to generate
+        tools: Optional list of tools in Groq function calling format
+        tool_choice: Control when tools are called. Options:
+            - "none": Don't call any tools (even if tools are provided)
+            - "auto": Let the model decide (default behavior)
+            - "required": Force the model to call at least one tool
+            - {"type": "function", "function": {"name": "tool_name"}}: Force specific tool
+    
+    Returns:
+        Dict with 'content', 'tool_calls' (if any), and 'metadata'
+    """
     if not groq_client:
         raise BadRequestError("Groq API key not configured")
 
@@ -172,22 +191,82 @@ async def get_chat_completion(
             f"Invalid model: {model}. Available models: {', '.join(model_ids[:5])}...")
 
     try:
+        import time
+        api_start = time.time()
+
         # Prepare messages for Groq API
-        groq_messages = [
-            {"role": msg["role"], "content": msg["content"]}
-            for msg in messages
-        ]
+        groq_messages = []
+        for msg in messages:
+            message_dict = {"role": msg["role"]}
+
+            # Add content if it exists and is not None
+            if "content" in msg and msg["content"] is not None:
+                message_dict["content"] = msg["content"]
+
+            # Add tool_calls if present (for assistant messages)
+            if "tool_calls" in msg:
+                message_dict["tool_calls"] = msg["tool_calls"]
+
+            # Add name if present (for tool messages)
+            if "name" in msg:
+                message_dict["name"] = msg["name"]
+
+            # Add tool_call_id if present (for tool messages)
+            if "tool_call_id" in msg:
+                message_dict["tool_call_id"] = msg["tool_call_id"]
+
+            groq_messages.append(message_dict)
+
+        # Prepare API call parameters
+        api_params = {
+            "model": model,
+            "messages": groq_messages,
+            "temperature": temperature,
+        }
+
+        if max_tokens:
+            api_params["max_tokens"] = max_tokens
+
+        # Add tools if provided
+        if tools:
+            api_params["tools"] = tools
+            logger.debug(f"[GROQ_API] Tools provided: {len(tools)} tool(s)")
+            # Set tool_choice if provided (gives control over when tools are called)
+            # Options: "none" (disable), "auto" (let model decide), "required" (force call)
+            if tool_choice is not None:
+                try:
+                    api_params["tool_choice"] = tool_choice
+                    logger.debug(f"[GROQ_API] Setting tool_choice to: {tool_choice}")
+                except Exception as e:
+                    # Some models may not support tool_choice parameter
+                    logger.warning(f"[GROQ_API] Model {model} may not support tool_choice parameter: {e}")
+
+        logger.info(f"[GROQ_API] Calling Groq API - model: {model}, messages: {len(groq_messages)}, "
+                    f"temperature: {temperature}, max_tokens: {max_tokens}")
 
         # Call Groq API
-        response = groq_client.chat.completions.create(
-            model=model,
-            messages=groq_messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        )
+        response = groq_client.chat.completions.create(**api_params)
+
+        api_time = time.time() - api_start
+        logger.info(f"[GROQ_API] Response received in {api_time:.2f}s - model: {model}")
 
         # Extract response
-        assistant_message = response.choices[0].message.content
+        message = response.choices[0].message
+        assistant_message = message.content if hasattr(message, 'content') and message.content else None
+
+        # Extract tool calls if present
+        tool_calls = None
+        if hasattr(message, 'tool_calls') and message.tool_calls:
+            tool_calls = []
+            for tool_call in message.tool_calls:
+                tool_calls.append({
+                    "id": tool_call.id,
+                    "type": tool_call.type,
+                    "function": {
+                        "name": tool_call.function.name,
+                        "arguments": tool_call.function.arguments
+                    }
+                })
 
         # Extract metadata
         metadata = {
@@ -200,10 +279,18 @@ async def get_chat_completion(
             "finish_reason": response.choices[0].finish_reason if response.choices else None,
         }
 
-        return {
-            "content": assistant_message,
+        result = {
             "metadata": metadata
         }
+
+        # Only include content if it's not None
+        if assistant_message is not None:
+            result["content"] = assistant_message
+
+        if tool_calls:
+            result["tool_calls"] = tool_calls
+
+        return result
 
     except Exception as e:
         raise BadRequestError(f"Error calling Groq API: {str(e)}")
@@ -355,3 +442,9 @@ async def transcribe_audio(
             "error": str(e),
             "success": False
         }
+
+
+async def get_tool_decision(
+
+) -> List[str]:
+    pass
