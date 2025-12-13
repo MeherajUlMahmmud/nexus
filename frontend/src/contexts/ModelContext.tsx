@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { Model } from '@/lib/types';
 import { ModelsRepository } from '@/repositories/models';
+import { useAuth } from '@/contexts/AuthContext';
 
 const STORAGE_KEY = 'nexus_selected_model';
 const DEFAULT_MODEL = 'llama-3.1-8b-instant';
@@ -17,6 +18,7 @@ interface ModelContextType {
 const ModelContext = createContext<ModelContextType | undefined>(undefined);
 
 export function ModelProvider({ children }: { children: React.ReactNode }) {
+    const { user } = useAuth();
     const [models, setModels] = useState<Model[]>([]);
     const [selectedModel, setSelectedModelState] = useState<string>(() => {
         // Initialize from localStorage or use default
@@ -28,8 +30,21 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const isFetchingRef = useRef(false);
 
     const refreshModels = useCallback(async () => {
+        // Don't fetch if user is not authenticated
+        if (!user) {
+            setLoading(false);
+            setModels([]);
+            return;
+        }
+        
+        // Prevent multiple simultaneous calls
+        if (isFetchingRef.current) {
+            return;
+        }
+        isFetchingRef.current = true;
         setLoading(true);
         setError(null);
         try {
@@ -39,10 +54,18 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
                 // If current selected model is not in the list, select the first one
                 if (response.data.length > 0) {
                     const modelIds = response.data.map((m) => m.id);
-                    if (!modelIds.includes(selectedModel)) {
-                        setSelectedModelState(response.data[0].id);
-                        localStorage.setItem(STORAGE_KEY, response.data[0].id);
-                    }
+                    setSelectedModelState((currentModel) => {
+                        if (!modelIds.includes(currentModel)) {
+                            const newModel = response.data[0].id;
+                            try {
+                                localStorage.setItem(STORAGE_KEY, newModel);
+                            } catch (err) {
+                                console.error('Failed to save selected model:', err);
+                            }
+                            return newModel;
+                        }
+                        return currentModel;
+                    });
                 }
             } else if (response && response.status === 'FAIL') {
                 setError(response.message);
@@ -52,8 +75,9 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
             setError('Failed to load models');
         } finally {
             setLoading(false);
+            isFetchingRef.current = false;
         }
-    }, [selectedModel]);
+    }, [user]);
 
     const setSelectedModel = useCallback((modelId: string) => {
         setSelectedModelState(modelId);
@@ -66,8 +90,7 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         refreshModels();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [refreshModels]);
 
     return (
         <ModelContext.Provider

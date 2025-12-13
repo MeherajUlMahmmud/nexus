@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 
 # Initialize Groq client
 groq_client = Groq(
-    api_key=settings.groq_api_key) if settings.groq_api_key else None
+    api_key=settings.groq_api_key
+) if settings.groq_api_key else None
 
 # Audio transcription configuration
 SUPPORTED_FORMATS = {'.mp3', '.mp4', '.mpeg', '.mpga', '.m4a', '.wav', '.webm'}
@@ -442,9 +443,3 @@ async def transcribe_audio(
             "error": str(e),
             "success": False
         }
-
-
-async def get_tool_decision(
-
-) -> List[str]:
-    pass

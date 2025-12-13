@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { Session, SessionCreate } from '@/lib/types';
 import { SessionRepository } from '@/repositories/session';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SessionContextType {
     sessions: Session[];
@@ -16,12 +17,26 @@ interface SessionContextType {
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
+    const { user } = useAuth();
     const [sessions, setSessions] = useState<Session[]>([]);
     const [currentSession, setCurrentSessionState] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const isFetchingRef = useRef(false);
 
     const refreshSessions = useCallback(async () => {
+        // Don't fetch if user is not authenticated
+        if (!user) {
+            setLoading(false);
+            setSessions([]);
+            return;
+        }
+        
+        // Prevent multiple simultaneous calls
+        if (isFetchingRef.current) {
+            return;
+        }
+        isFetchingRef.current = true;
         setLoading(true);
         setError(null);
         try {
@@ -37,8 +52,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
             setError('Failed to load sessions');
         } finally {
             setLoading(false);
+            isFetchingRef.current = false;
         }
-    }, []);
+    }, [user]);
 
     const createSession = useCallback(async (modelName?: string, message?: string): Promise<Session | null> => {
         setError(null);
@@ -86,8 +102,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         refreshSessions();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [refreshSessions]);
 
     return (
         <SessionContext.Provider
