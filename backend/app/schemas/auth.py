@@ -1,3 +1,4 @@
+import uuid
 from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field
@@ -44,7 +45,7 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: Optional[str] = None
-    user_id: Optional[int] = None
+    user_id: Optional[uuid.UUID] = None
 
 
 class RefreshTokenRequest(BaseModel):

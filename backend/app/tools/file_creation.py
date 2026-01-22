@@ -34,7 +34,7 @@ class FileCreationTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return "Creates a file with specified content and type. Supports .txt and .md formats. Can optionally append timestamp to filename and create files in subdirectories."
+        return "Creates a file with specified content and type. Supports .txt and .md formats. Can optionally append timestamp to filename and create files in subdirectories. If content is not provided or empty, it will be automatically generated based on the user's request."
 
     @property
     def parameters_schema(self) -> Dict[str, Any]:
@@ -71,8 +71,8 @@ class FileCreationTool(BaseTool):
                     "default": False
                 },
                 "session_id": {
-                    "type": "integer",
-                    "description": "Session ID for organizing generated files (automatically provided)",
+                    "type": "string",
+                    "description": "Session ID (UUID) for organizing generated files (automatically provided)",
                     "default": None
                 }
             },
@@ -87,7 +87,7 @@ class FileCreationTool(BaseTool):
             subdirectory: str = "",
             append_timestamp: bool = False,
             overwrite: bool = False,
-            session_id: Optional[int] = None
+            session_id: Optional[str] = None
     ) -> str:
         """
         Create a file with the specified content and type.
@@ -112,8 +112,13 @@ class FileCreationTool(BaseTool):
             # Determine base directory based on session_id
             if session_id is not None:
                 # Use uploads/generated/{session_id}/ as base directory
-                base_dir = Path("uploads") / "generated" / str(session_id)
-                base_directory = str(base_dir.resolve())
+                # session_id can be UUID or string, convert to string
+                session_id_str = str(session_id) if session_id else None
+                if session_id_str:
+                    base_dir = Path("uploads") / "generated" / session_id_str
+                    base_directory = str(base_dir.resolve())
+                else:
+                    base_directory = self.default_base_directory
             else:
                 # Fallback to default base directory
                 base_directory = self.default_base_directory
@@ -141,11 +146,13 @@ class FileCreationTool(BaseTool):
             # Check if file exists
             if os.path.exists(file_path) and not overwrite:
                 # Use relative path in error message for privacy
-                error_path = filename_with_ext if session_id is None else f"uploads/generated/{session_id}/{filename_with_ext}"
+                session_id_str = str(session_id) if session_id else None
+                error_path = filename_with_ext if session_id_str is None else f"uploads/generated/{session_id_str}/{filename_with_ext}"
                 return f"Error: File already exists: '{error_path}'. Set overwrite=True to replace it."
 
             # Prepare content based on file type
-            formatted_content = self._format_content(content, file_type, filename)
+            formatted_content = self._format_content(
+                content, file_type, filename)
 
             # Write file asynchronously
             async with aiofiles.open(file_path, 'w', encoding='utf-8') as f:
@@ -156,11 +163,12 @@ class FileCreationTool(BaseTool):
             file_size_kb = file_size / 1024
 
             # Create relative path for display (privacy-friendly)
-            if session_id is not None:
+            session_id_str = str(session_id) if session_id else None
+            if session_id_str is not None:
                 # Show relative path from uploads/generated/{session_id}/
-                display_path = f"uploads/generated/{session_id}/{filename_with_ext}"
+                display_path = f"uploads/generated/{session_id_str}/{filename_with_ext}"
                 if subdirectory:
-                    display_path = f"uploads/generated/{session_id}/{subdirectory}/{filename_with_ext}"
+                    display_path = f"uploads/generated/{session_id_str}/{subdirectory}/{filename_with_ext}"
             else:
                 # Fallback to just filename
                 display_path = filename_with_ext
@@ -192,7 +200,8 @@ Lines: {len(formatted_content.splitlines())}
 
         except PermissionError:
             # Don't expose full directory path in error
-            error_dir = "the target directory" if session_id is None else f"uploads/generated/{session_id}/"
+            session_id_str = str(session_id) if session_id else None
+            error_dir = "the target directory" if session_id_str is None else f"uploads/generated/{session_id_str}/"
             return f"Error: Permission denied. Cannot write to {error_dir}"
         except OSError as e:
             # Don't expose system paths in error messages

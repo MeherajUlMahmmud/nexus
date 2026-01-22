@@ -1,3 +1,4 @@
+import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -7,7 +8,7 @@ from app.schemas.user import UserUpdate, UserResponse, PasswordChange
 from app.utils.security import verify_password, get_password_hash
 
 
-async def get_user_by_id(db: AsyncSession, user_id: int) -> User:
+async def get_user_by_id(db: AsyncSession, user_id: uuid.UUID) -> User:
     """Get user by ID."""
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()

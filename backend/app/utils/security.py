@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
@@ -19,8 +20,18 @@ def get_password_hash(password: str) -> str:
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """Create a JWT access token."""
+    """Create a JWT access token.
+    
+    Note: UUID values in data dict will be automatically converted to strings
+    for JWT serialization.
+    """
     to_encode = data.copy()
+    
+    # Convert UUID values to strings for JWT serialization
+    for key, value in to_encode.items():
+        if isinstance(value, uuid.UUID):
+            to_encode[key] = str(value)
+    
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:

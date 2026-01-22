@@ -163,7 +163,7 @@ async def get_chat_completion(
 ) -> Dict[str, Any]:
     """
     Get chat completion from Groq API with optional function calling support.
-    
+
     Args:
         messages: List of message dicts with 'role' and 'content'
         model: Model name
@@ -175,7 +175,7 @@ async def get_chat_completion(
             - "auto": Let the model decide (default behavior)
             - "required": Force the model to call at least one tool
             - {"type": "function", "function": {"name": "tool_name"}}: Force specific tool
-    
+
     Returns:
         Dict with 'content', 'tool_calls' (if any), and 'metadata'
     """
@@ -237,10 +237,12 @@ async def get_chat_completion(
             if tool_choice is not None:
                 try:
                     api_params["tool_choice"] = tool_choice
-                    logger.debug(f"[GROQ_API] Setting tool_choice to: {tool_choice}")
+                    logger.debug(
+                        f"[GROQ_API] Setting tool_choice to: {tool_choice}")
                 except Exception as e:
                     # Some models may not support tool_choice parameter
-                    logger.warning(f"[GROQ_API] Model {model} may not support tool_choice parameter: {e}")
+                    logger.warning(
+                        f"[GROQ_API] Model {model} may not support tool_choice parameter: {e}")
 
         logger.info(f"[GROQ_API] Calling Groq API - model: {model}, messages: {len(groq_messages)}, "
                     f"temperature: {temperature}, max_tokens: {max_tokens}")
@@ -249,11 +251,13 @@ async def get_chat_completion(
         response = groq_client.chat.completions.create(**api_params)
 
         api_time = time.time() - api_start
-        logger.info(f"[GROQ_API] Response received in {api_time:.2f}s - model: {model}")
+        logger.info(
+            f"[GROQ_API] Response received in {api_time:.2f}s - model: {model}")
 
         # Extract response
         message = response.choices[0].message
-        assistant_message = message.content if hasattr(message, 'content') and message.content else None
+        assistant_message = message.content if hasattr(
+            message, 'content') and message.content else None
 
         # Extract tool calls if present
         tool_calls = None
@@ -403,7 +407,8 @@ async def transcribe_audio(
                 transcribe_params["language"] = language
 
             # Call Groq API
-            transcription = groq_client.audio.transcriptions.create(**transcribe_params)
+            transcription = groq_client.audio.transcriptions.create(
+                **transcribe_params)
 
         # Parse response based on format
         if response_format == "text":
@@ -412,8 +417,10 @@ async def transcribe_audio(
             segments = []
         else:
             # For json or verbose_json
-            transcribed_text = transcription.text if hasattr(transcription, 'text') else str(transcription)
-            detected_language = getattr(transcription, 'language', language or "unknown")
+            transcribed_text = transcription.text if hasattr(
+                transcription, 'text') else str(transcription)
+            detected_language = getattr(
+                transcription, 'language', language or "unknown")
             segments = getattr(transcription, 'segments', [])
 
         logger.info(

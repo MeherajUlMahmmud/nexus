@@ -1,3 +1,4 @@
+import uuid
 from typing import AsyncGenerator
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -29,9 +30,22 @@ async def get_current_user(
         raise credentials_exception
     
     username: str = payload.get("sub")
-    user_id: int = payload.get("user_id")
+    user_id_value = payload.get("user_id")
     
-    if username is None or user_id is None:
+    if username is None or user_id_value is None:
+        raise credentials_exception
+    
+    # Convert user_id to UUID (handle both string and UUID formats)
+    try:
+        if isinstance(user_id_value, str):
+            user_id = uuid.UUID(user_id_value)
+        elif isinstance(user_id_value, uuid.UUID):
+            user_id = user_id_value
+        else:
+            # Legacy support: if it's an int, we can't convert it
+            # This would only happen with old tokens
+            raise ValueError("Invalid user_id format")
+    except (ValueError, AttributeError):
         raise credentials_exception
     
     # Get user from database

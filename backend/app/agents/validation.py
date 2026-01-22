@@ -123,32 +123,40 @@ class QueryValidator(BaseValidator):
         }
 
         # Check 1: Jailbreak attempts
-        jailbreak_matches = self._check_patterns(text.lower(), self.jailbreak_patterns)
+        jailbreak_matches = self._check_patterns(
+            text.lower(), self.jailbreak_patterns)
         if jailbreak_matches:
-            issues.append(f"Potential jailbreak attempt detected: {', '.join(jailbreak_matches[:3])}")
+            issues.append(
+                f"Potential jailbreak attempt detected: {', '.join(jailbreak_matches[:3])}")
             details["jailbreak_detected"] = True
             severity_score = max(severity_score, 0.9)
 
         # Check 2: Prompt injection
-        injection_matches = self._check_patterns(text, self.prompt_injection_patterns)
+        injection_matches = self._check_patterns(
+            text, self.prompt_injection_patterns)
         if injection_matches:
-            issues.append(f"Potential prompt injection detected: {', '.join(injection_matches[:3])}")
+            issues.append(
+                f"Potential prompt injection detected: {', '.join(injection_matches[:3])}")
             details["prompt_injection_detected"] = True
             severity_score = max(severity_score, 0.95)
 
         # Check 3: Malicious intent
-        malicious_found = [kw for kw in self.malicious_intent_keywords if kw in text.lower()]
+        malicious_found = [
+            kw for kw in self.malicious_intent_keywords if kw in text.lower()]
         if malicious_found:
             # Context matters - not all mentions are malicious
             if self._is_likely_malicious(text, malicious_found):
-                issues.append(f"Potential malicious intent: {', '.join(malicious_found[:3])}")
+                issues.append(
+                    f"Potential malicious intent: {', '.join(malicious_found[:3])}")
                 details["malicious_intent_detected"] = True
                 severity_score = max(severity_score, 0.7)
 
         # Check 4: Requesting sensitive information
-        sensitive_matches = self._check_patterns(text.lower(), self.sensitive_info_requests)
+        sensitive_matches = self._check_patterns(
+            text.lower(), self.sensitive_info_requests)
         if sensitive_matches:
-            issues.append(f"Request for sensitive information: {', '.join(sensitive_matches[:3])}")
+            issues.append(
+                f"Request for sensitive information: {', '.join(sensitive_matches[:3])}")
             details["sensitive_info_requested"] = True
             severity_score = max(severity_score, 0.8)
 
@@ -213,7 +221,8 @@ class QueryValidator(BaseValidator):
         if any(ind in text_lower for ind in malicious_indicators):
             return True
 
-        return len(keywords) >= 2  # Multiple malicious keywords = likely malicious
+        # Multiple malicious keywords = likely malicious
+        return len(keywords) >= 2
 
     def _has_suspicious_repetition(self, text: str) -> bool:
         """Check for suspicious repetitive patterns."""
@@ -293,16 +302,20 @@ class ResponseValidator(BaseValidator):
         }
 
         # Check 1: Private information leakage
-        private_matches = self._check_patterns(text, self.private_info_patterns)
+        private_matches = self._check_patterns(
+            text, self.private_info_patterns)
         if private_matches:
-            issues.append(f"Potential private information leak detected: {len(private_matches)} matches")
+            issues.append(
+                f"Potential private information leak detected: {len(private_matches)} matches")
             details["private_info_leaked"] = True
             severity_score = max(severity_score, 0.95)
 
         # Check 2: System information disclosure
-        system_matches = self._check_patterns(text.lower(), self.system_info_patterns)
+        system_matches = self._check_patterns(
+            text.lower(), self.system_info_patterns)
         if system_matches:
-            issues.append(f"Potential system information disclosure: {', '.join(system_matches[:2])}")
+            issues.append(
+                f"Potential system information disclosure: {', '.join(system_matches[:2])}")
             details["system_info_leaked"] = True
             severity_score = max(severity_score, 0.7)
 
@@ -314,11 +327,13 @@ class ResponseValidator(BaseValidator):
             severity_score = max(severity_score, 0.5)
 
         # Check 4: Potentially harmful content
-        harmful_found = [kw for kw in self.harmful_content_keywords if kw in text.lower()]
+        harmful_found = [
+            kw for kw in self.harmful_content_keywords if kw in text.lower()]
         if harmful_found:
             # Check context - educational content is okay
             if not self._is_educational_context(text):
-                issues.append(f"Potentially harmful content: {', '.join(harmful_found[:3])}")
+                issues.append(
+                    f"Potentially harmful content: {', '.join(harmful_found[:3])}")
                 details["potentially_harmful"] = True
                 severity_score = max(severity_score, 0.8)
 
@@ -411,7 +426,8 @@ class ResponseValidator(BaseValidator):
         text_lower = text.lower()
 
         # Count absolute claims
-        claim_count = sum(1 for claim in absolute_claims if claim in text_lower)
+        claim_count = sum(
+            1 for claim in absolute_claims if claim in text_lower)
 
         # High confidence with no hedging is risky
         hedging_phrases = [
@@ -570,12 +586,16 @@ class ValidationAgent:
         if total == 0:
             return {"total_validations": 0}
 
-        blocked = sum(1 for log in self.validation_log if log["status"] == "blocked")
-        warnings = sum(1 for log in self.validation_log if log["status"] == "warning")
+        blocked = sum(
+            1 for log in self.validation_log if log["status"] == "blocked")
+        warnings = sum(
+            1 for log in self.validation_log if log["status"] == "warning")
         safe = sum(1 for log in self.validation_log if log["status"] == "safe")
 
-        query_validations = sum(1 for log in self.validation_log if log["type"] == "query")
-        response_validations = sum(1 for log in self.validation_log if log["type"] == "response")
+        query_validations = sum(
+            1 for log in self.validation_log if log["type"] == "query")
+        response_validations = sum(
+            1 for log in self.validation_log if log["type"] == "response")
 
         return {
             "total_validations": total,
@@ -587,4 +607,3 @@ class ValidationAgent:
             "block_rate": f"{(blocked/total)*100:.2f}%" if total > 0 else "0.00%",
             "warning_rate": f"{(warnings/total)*100:.2f}%" if total > 0 else "0.00%"
         }
-

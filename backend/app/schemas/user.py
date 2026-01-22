@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 from typing import Optional
 
@@ -20,7 +21,7 @@ class UserUpdate(UserBase):
 
 
 class UserResponse(BaseModel):
-    id: int
+    id: uuid.UUID
     username: str
     name: str
     email: str

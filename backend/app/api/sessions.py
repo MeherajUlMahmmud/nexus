@@ -1,4 +1,5 @@
 import logging
+import uuid
 
 from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -66,7 +67,7 @@ async def create_new_session(
 
 @router.get("/{session_id}/details", response_model=APIResponse)
 async def get_session(
-        session_id: int,
+        session_id: uuid.UUID,
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
@@ -87,7 +88,7 @@ async def get_session(
 
 @router.put("/{session_id}/update", response_model=APIResponse)
 async def update_session_endpoint(
-        session_id: int,
+        session_id: uuid.UUID,
         session_update: SessionUpdate,
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
@@ -109,7 +110,7 @@ async def update_session_endpoint(
 
 @router.delete("/{session_id}/delete", response_model=APIResponse, status_code=status.HTTP_200_OK)
 async def delete_session_endpoint(
-        session_id: int,
+        session_id: uuid.UUID,
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):

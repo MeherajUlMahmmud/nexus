@@ -1,14 +1,14 @@
 from sqlalchemy import Column, String, Text, Integer, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 
-from app.models.base import BaseModel
+from app.models.base import BaseModel, GUID
 
 
 class File(BaseModel):
     __tablename__ = "files"
 
     message_id = Column(
-        Integer,
+        GUID(),
         ForeignKey("messages.id"),
         nullable=False,
         index=True
@@ -26,7 +26,7 @@ class File(BaseModel):
 class Message(BaseModel):
     __tablename__ = "messages"
 
-    session_id = Column(Integer, ForeignKey(
+    session_id = Column(GUID(), ForeignKey(
         "chat_sessions.id"), nullable=False, index=True)
     role = Column(String, nullable=False)  # "user" or "assistant"
     content = Column(Text, nullable=False)

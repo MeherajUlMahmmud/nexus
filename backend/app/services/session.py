@@ -1,4 +1,5 @@
 import logging
+import uuid
 from typing import List
 
 from sqlalchemy import select
@@ -74,7 +75,7 @@ async def create_session(
 
 async def get_session_by_id(
         db: AsyncSession,
-        session_id: int,
+        session_id: uuid.UUID,
         user: User
 ) -> SessionResponse:
     """Get a specific chat session with messages and their files."""
@@ -96,7 +97,7 @@ async def get_session_by_id(
 
 async def update_session(
         db: AsyncSession,
-        session_id: int,
+        session_id: uuid.UUID,
         user: User,
         session_update: SessionUpdate
 ) -> SessionResponse:
@@ -133,7 +134,7 @@ async def update_session(
 
 async def delete_session(
         db: AsyncSession,
-        session_id: int,
+        session_id: uuid.UUID,
         user: User
 ) -> dict:
     """Delete a chat session."""

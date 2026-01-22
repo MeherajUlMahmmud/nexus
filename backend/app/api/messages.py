@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+import uuid
 from typing import List
 
 from fastapi import APIRouter, Depends, status, Form, File as FastAPIFile, UploadFile, Request
@@ -42,7 +43,7 @@ if not os.path.exists(UPLOAD_DIR):
 
 @router.get("/list", response_model=APIResponse)
 async def get_messages(
-        session_id: int,
+        session_id: uuid.UUID,
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
@@ -66,7 +67,7 @@ async def get_messages(
 @router.post("/chat", response_model=APIResponse, status_code=status.HTTP_201_CREATED)
 async def chat(
         request: Request,
-        session_id: int,
+        session_id: uuid.UUID,
         content: str = Form(...),
         files: List[UploadFile] = FastAPIFile(default=[]),
         current_user: User = Depends(get_current_user),

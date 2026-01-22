@@ -1,3 +1,4 @@
+import uuid
 from typing import List
 
 from sqlalchemy import select
@@ -13,7 +14,7 @@ from app.schemas.message import MessageCreate, MessageResponse
 
 async def get_session_messages(
         db: AsyncSession,
-        session_id: int,
+        session_id: uuid.UUID,
         user: User
 ) -> List[MessageResponse]:
     """Get all messages in a chat session."""
@@ -43,7 +44,7 @@ async def get_session_messages(
 
 async def create_message(
         db: AsyncSession,
-        session_id: int,
+        session_id: uuid.UUID,
         user: User,
         message_data: MessageCreate
 ) -> MessageResponse:

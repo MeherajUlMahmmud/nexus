@@ -34,20 +34,20 @@ MAX_FILES = 2
 
 async def validate_session(
         db: AsyncSession,
-        session_id: int,
+        session_id: uuid.UUID,
         user: User
 ) -> ChatSession:
     """
     Validate that session exists and belongs to the user.
-    
+
     Args:
         db: Database session
         session_id: Session ID to validate
         user: Current user
-        
+
     Returns:
         ChatSession: The validated session
-        
+
     Raises:
         NotFoundError: If session doesn't exist
         ForbiddenError: If user doesn't have access to session
@@ -75,17 +75,17 @@ async def validate_session(
 
 async def validate_and_process_file(
         file: UploadFile,
-        session_id: int,
-        user_id: int
+        session_id: uuid.UUID,
+        user_id: uuid.UUID
 ) -> Tuple[Optional[File], Optional[str], Optional[str], Optional[str]]:
     """
     Validate and process a single uploaded file.
-    
+
     Args:
         file: Uploaded file
         session_id: Current session ID
         user_id: Current user ID
-        
+
     Returns:
         Tuple of (File object, file content, file path, error_message)
         On error, returns (None, None, None, error_message)
@@ -146,7 +146,8 @@ async def validate_and_process_file(
                 if os.path.exists(file_path):
                     os.remove(file_path)
             except Exception as cleanup_error:
-                logger.error(f"Failed to cleanup file {file_path}: {cleanup_error}")
+                logger.error(
+                    f"Failed to cleanup file {file_path}: {cleanup_error}")
             return None, None, None, f"File {file_name} is not valid UTF-8 text"
 
         # Create file record
@@ -175,17 +176,17 @@ async def validate_and_process_file(
 
 async def process_uploaded_files(
         files: List[UploadFile],
-        session_id: int,
-        user_id: int
+        session_id: uuid.UUID,
+        user_id: uuid.UUID
 ) -> Tuple[Optional[List[File]], Optional[List[str]], Optional[List[str]], Optional[str]]:
     """
     Process all uploaded files with validation and cleanup on error.
-    
+
     Args:
         files: List of uploaded files
         session_id: Current session ID
         user_id: Current user ID
-        
+
     Returns:
         Tuple of (file_list, file_contents, saved_file_paths, error_message)
         If error occurs, returns (None, None, None, error_message)
@@ -216,7 +217,8 @@ async def process_uploaded_files(
                     if os.path.exists(saved_path):
                         os.remove(saved_path)
                 except Exception as cleanup_error:
-                    logger.error(f"Failed to cleanup file {saved_path}: {cleanup_error}")
+                    logger.error(
+                        f"Failed to cleanup file {saved_path}: {cleanup_error}")
             return None, None, None, error_message or f"Failed to process file {file.filename}"
 
         file_list.append(file_item)
@@ -228,22 +230,22 @@ async def process_uploaded_files(
 
 async def create_user_message(
         db: AsyncSession,
-        session_id: int,
+        session_id: uuid.UUID,
         content: str,
         file_list: List[File]
 ) -> Message:
     """
     Create and save user message with attached files.
-    
+
     Args:
         db: Database session
         session_id: Session ID
         content: Message content
         file_list: List of File objects to attach
-        
+
     Returns:
         Message: Created user message
-        
+
     Raises:
         Returns fail_response dict on database errors
     """
@@ -282,12 +284,12 @@ def prepare_messages_for_api(
 ) -> List[Dict[str, str]]:
     """
     Prepare messages in format expected by Groq API.
-    
+
     Args:
         existing_messages: Previous messages in conversation
         user_message: New user message
         file_contents: Contents of uploaded files
-        
+
     Returns:
         List of message dicts for API
     """
@@ -313,20 +315,20 @@ def prepare_messages_for_api(
 async def execute_tool_orchestration(
         content: str,
         conversation_history: List[Dict[str, str]],
-        session_id: int,
+        session_id: uuid.UUID,
         model_name: str,
         client_ip: Optional[str]
 ) -> Tuple[Optional[str], int, Optional[List[Dict[str, Any]]]]:
     """
     Execute tool orchestration if tools are enabled.
-    
+
     Args:
         content: User query content
         conversation_history: Previous conversation messages
         session_id: Current session ID
         model_name: Model name to use
         client_ip: Client IP address for location-based tools
-        
+
     Returns:
         Tuple of (final_response_content, tools_used_count, tool_results)
     """
@@ -385,7 +387,9 @@ async def execute_tool_orchestration(
     tool_execution_start = time.time()
     tool_results = await tool_orchestrator.execute_tools(
         tool_decisions=tool_decisions,
-        request_context=request_context
+        request_context=request_context,
+        user_query=content,
+        conversation_history=conversation_history
     )
     tool_execution_time = time.time() - tool_execution_start
     successful_tools = sum(1 for r in tool_results if r.get("success", False))
@@ -417,16 +421,16 @@ async def execute_tool_orchestration(
 async def get_llm_response(
         groq_messages: List[Dict[str, str]],
         model_name: str,
-        session_id: int
+        session_id: uuid.UUID
 ) -> Tuple[str, Dict[str, Any]]:
     """
     Get direct LLM response when tools are not used.
-    
+
     Args:
         groq_messages: Messages formatted for API
         model_name: Model name to use
         session_id: Current session ID
-        
+
     Returns:
         Tuple of (response_content, metadata)
     """
@@ -452,10 +456,10 @@ async def get_llm_response(
 def parse_created_files(tool_results: Optional[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
     """
     Parse tool results to extract created files metadata.
-    
+
     Args:
         tool_results: Results from tool execution
-        
+
     Returns:
         List of file metadata dicts
     """
@@ -489,15 +493,15 @@ def parse_created_files(tool_results: Optional[List[Dict[str, Any]]]) -> List[Di
 
 async def create_file_records_for_generated_files(
         created_files: List[Dict[str, Any]],
-        session_id: int
+        session_id: uuid.UUID
 ) -> List[File]:
     """
     Create File database records for generated files.
-    
+
     Args:
         created_files: List of file metadata dicts
         session_id: Current session ID
-        
+
     Returns:
         List of File objects
     """
@@ -520,14 +524,16 @@ async def create_file_records_for_generated_files(
             async with aiofiles.open(file_path, 'r', encoding='utf-8') as f:
                 file_content = await f.read()
 
-            file_size = file_meta.get("file_size", len(file_content.encode('utf-8')))
+            file_size = file_meta.get(
+                "file_size", len(file_content.encode('utf-8')))
             filename = file_meta.get("filename", os.path.basename(file_path))
             file_ext = file_meta.get("file_type", "txt")
             file_type = mime_type_map.get(file_ext, "text/plain")
 
             # Create relative URL path
             if "uploads/generated" in file_path:
-                rel_path = file_path.split("uploads/", 1)[1] if "uploads/" in file_path else filename
+                rel_path = file_path.split(
+                    "uploads/", 1)[1] if "uploads/" in file_path else filename
                 file_url = f'/uploads/{rel_path}'
             else:
                 file_url = f'/uploads/{filename}'
@@ -557,21 +563,21 @@ async def create_file_records_for_generated_files(
 
 async def create_assistant_message(
         db: AsyncSession,
-        session_id: int,
+        session_id: uuid.UUID,
         content: str,
         metadata: Dict[str, Any],
         file_list: List[File]
 ) -> MessageResponse:
     """
     Create and save assistant message with metadata and files.
-    
+
     Args:
         db: Database session
         session_id: Session ID
         content: Message content
         metadata: Extra metadata
         file_list: List of File objects to attach
-        
+
     Returns:
         MessageResponse: Created assistant message
     """

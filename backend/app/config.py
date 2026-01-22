@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     # Tools
     tools_enabled: bool = True
     openweathermap_api_key: str = ""
+    # Web Search - DuckDuckGo doesn't require API key, but SerpAPI can be used as alternative
+    serpapi_api_key: str = ""
+    search_provider: str = "duckduckgo"  # Options: "duckduckgo" or "serpapi"
     
     # CORS
     cors_origins: List[str] = ["http://localhost:3000", "http://localhost:5173"]

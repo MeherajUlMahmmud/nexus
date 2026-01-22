@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 
@@ -23,7 +24,7 @@ class MessageCreate(MessageBase):
 
 
 class FileResponse(BaseModel):
-    id: int
+    id: uuid.UUID
     filename: str
     file_type: str
     file_size: int
@@ -35,8 +36,8 @@ class FileResponse(BaseModel):
 
 
 class MessageResponse(BaseModel):
-    id: int
-    session_id: int
+    id: uuid.UUID
+    session_id: uuid.UUID
     role: str
     content: str
     extra_metadata: Optional[Dict[str, Any]] = None
