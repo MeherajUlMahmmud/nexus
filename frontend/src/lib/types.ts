@@ -18,7 +18,7 @@ export interface RegisterRequest {
 }
 
 export interface User {
-  id: number;
+  id: string;
   username: string;
   name: string;
   email: string;
@@ -30,7 +30,7 @@ export interface TokenResponse extends APIResponse<{
   token_type: string;
   expires_in: number;
   user: {
-    id: number;
+    id: string;
     username: string;
     name: string;
     email: string;
@@ -44,8 +44,8 @@ export interface SessionResponse extends APIResponse<Session> {}
 export interface SessionsResponse extends APIResponse<Session[]> {}
 
 export interface Session {
-  id: number;
-  user_id: number;
+  id: string;
+  user_id: string;
   title: string;
   model_name: string;
   created_at: string;
@@ -57,7 +57,7 @@ export interface MessageResponse extends APIResponse<Message> {}
 export interface MessagesResponse extends APIResponse<Message[]> {}
 
 export interface FileAttachment {
-  id: number;
+  id: string;
   filename: string;
   file_type: string;
   file_size: number;
@@ -66,8 +66,8 @@ export interface FileAttachment {
 }
 
 export interface Message {
-  id: number;
-  session_id: number;
+  id: string;
+  session_id: string;
   role: 'user' | 'assistant';
   content: string;
   extra_metadata?: Record<string, any>;

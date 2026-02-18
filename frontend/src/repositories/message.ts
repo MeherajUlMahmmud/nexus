@@ -9,7 +9,7 @@ export const MessageRepository = {
     /**
      * Send message (chat endpoint that gets AI response)
      */
-    sendChatMessage: async (sessionId: number, formData: FormData): Promise<MessageResponse> => {
+    sendChatMessage: async (sessionId: string, formData: FormData): Promise<MessageResponse> => {
         const response = await ApiHandler.sendPostRequest(
             API_ROUTES.MESSAGES.CHAT(sessionId), 
             formData,
@@ -21,7 +21,7 @@ export const MessageRepository = {
     /**
      * Get messages
      */
-    getMessages: async (sessionId: number): Promise<MessagesResponse> => {
+    getMessages: async (sessionId: string): Promise<MessagesResponse> => {
         const response = await ApiHandler.sendGetRequest(API_ROUTES.MESSAGES.LIST(sessionId));
         return response.data;
     },

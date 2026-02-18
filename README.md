@@ -58,6 +58,7 @@ nexus/
 ### Prerequisites
 
 - **Python 3.10+** (for backend)
+- **uv** (fast Python package installer) - [Install uv](https://github.com/astral-sh/uv)
 - **Node.js 18+** (for frontend)
 - **Redis** (optional, for caching)
 - **Groq API Key** (for AI features)
@@ -69,18 +70,29 @@ nexus/
 cd backend
 ```
 
-2. Create virtual environment:
+2. Install dependencies with uv:
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+uv pip install -r requirements.txt
 ```
 
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
+   Or if you prefer to use a virtual environment:
+   ```bash
+   uv venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   uv pip install -r requirements.txt
+   ```
+
+4. Create `.env` file with the following variables:
+```env
+GROQ_API_KEY=your_groq_api_key_here
+OPENWEATHERMAP_API_KEY=your_openweathermap_api_key_here
 ```
 
-4. Create `.env` file
+   You can copy from `.env.example`:
+   ```bash
+   cp .env.example .env
+   ```
+   Then edit `.env` with your actual API keys.
 
 5. Run database migrations:
 ```bash
@@ -142,7 +154,7 @@ Nexus includes an extensible tool system that allows AI to interact with externa
 1. **Calculator** - Perform mathematical calculations
 2. **Weather** - Get weather information for locations
 3. **File Creation** - Create and save files
-4. **Location** - Get location information from IP
+4. **Web Search** - Search the web for information
 
 ### Tool Orchestration
 

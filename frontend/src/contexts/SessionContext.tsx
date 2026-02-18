@@ -10,7 +10,7 @@ interface SessionContextType {
     error: string | null;
     setCurrentSession: (session: Session | null) => void;
     createSession: (modelName?: string, message?: string) => Promise<Session | null>;
-    deleteSession: (sessionId: number) => Promise<void>;
+    deleteSession: (sessionId: string) => Promise<void>;
     refreshSessions: () => Promise<void>;
 }
 
@@ -86,7 +86,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         setCurrentSessionState(session);
     }, []);
 
-    const deleteSession = useCallback(async (sessionId: number): Promise<void> => {
+    const deleteSession = useCallback(async (sessionId: string): Promise<void> => {
         setError(null);
         try {
             await SessionRepository.deleteSession(sessionId);

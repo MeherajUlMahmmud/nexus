@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, Integer, ForeignKey, JSON
+from sqlalchemy import Column, String, Text, Integer, ForeignKey, JSON, Boolean
 from sqlalchemy.orm import relationship
 
 from app.models.base import BaseModel, GUID
@@ -10,9 +10,10 @@ class File(BaseModel):
     message_id = Column(
         GUID(),
         ForeignKey("messages.id"),
-        nullable=False,
+        nullable=True,
         index=True
     )
+    is_global = Column(Boolean, nullable=False, default=False, index=True)
     filename = Column(String, nullable=False)
     file_type = Column(String, nullable=False)
     file_size = Column(Integer, nullable=False)  # File size in bytes

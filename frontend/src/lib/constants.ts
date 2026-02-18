@@ -1,5 +1,5 @@
 // Backend API Base URL
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001/api';
 
 // Backend API Routes
 export const API_ROUTES = {
@@ -15,15 +15,15 @@ export const API_ROUTES = {
   SESSIONS: {
     LIST: `${API_BASE_URL}/sessions/list`,
     CREATE: `${API_BASE_URL}/sessions/create`,
-    DETAILS: (id: number) => `${API_BASE_URL}/sessions/${id}/details`,
-    UPDATE: (id: number) => `${API_BASE_URL}/sessions/${id}/update`,
-    DELETE: (id: number) => `${API_BASE_URL}/sessions/${id}/delete`,
+    DETAILS: (id: string) => `${API_BASE_URL}/sessions/${id}/details`,
+    UPDATE: (id: string) => `${API_BASE_URL}/sessions/${id}/update`,
+    DELETE: (id: string) => `${API_BASE_URL}/sessions/${id}/delete`,
   },
   // Message routes
   MESSAGES: {
-    LIST: (sessionId: number) => `${API_BASE_URL}/sessions/${sessionId}/messages/list`,
+    LIST: (sessionId: string) => `${API_BASE_URL}/sessions/${sessionId}/messages/list`,
     NEW: `${API_BASE_URL}/messages/new`,
-    CHAT: (sessionId: number) => `${API_BASE_URL}/sessions/${sessionId}/messages/chat`,
+    CHAT: (sessionId: string) => `${API_BASE_URL}/sessions/${sessionId}/messages/chat`,
   },
   // Transcription routes
   TRANSCRIBE: {

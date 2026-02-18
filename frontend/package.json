@@ -1,5 +1,5 @@
 {
-  "name": "frontend",
+  "name": "Nexus - AI Chatbot",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -57,6 +57,7 @@
     "remark-gfm": "^4.0.1",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
+    "uuid": "^13.0.0",
     "vaul": "^1.1.2",
     "zod": "^4.1.13"
   },

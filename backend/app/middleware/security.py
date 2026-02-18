@@ -1,5 +1,6 @@
 import logging
 import re
+import asyncio
 from typing import Callable
 
 from fastapi import Request, Response, status
@@ -7,7 +8,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
 from app.database import AsyncSessionLocal
-from app.services.ip_blocking import track_sensitive_url_attempt, block_ip
+from app.services.ip_blocking import IPBlockingService
 
 logger = logging.getLogger(__name__)
 
@@ -134,6 +135,10 @@ COMPILED_PATTERNS = [re.compile(pattern, re.IGNORECASE) for pattern in SENSITIVE
 class SecurityMiddleware(BaseHTTPMiddleware):
     """Middleware to block access to sensitive URLs and track attempts."""
 
+    def __init__(self, app, ip_blocking_service: IPBlockingService = None):
+        super().__init__(app)
+        self.ip_blocking_service = ip_blocking_service or IPBlockingService()
+
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         # Get the request path
         path = request.url.path
@@ -154,14 +159,24 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                     f"User-Agent: {user_agent}"
                 )
 
-                # Track the attempt in Redis
-                should_block = await track_sensitive_url_attempt(client_ip, user_agent)
+                # Track the attempt in Redis (with timeout to prevent hanging)
+                try:
+                    should_block = await asyncio.wait_for(
+                        self.ip_blocking_service.track_sensitive_url_attempt(client_ip, user_agent),
+                        timeout=1.0  # 1 second timeout
+                    )
+                except asyncio.TimeoutError:
+                    logger.warning(f"Redis operation timeout for IP {client_ip}, continuing without blocking")
+                    should_block = False
+                except Exception as e:
+                    logger.error(f"Error tracking sensitive URL attempt: {str(e)}")
+                    should_block = False
 
                 # If threshold reached, block the IP in database
                 if should_block:
                     async with AsyncSessionLocal() as db:
                         try:
-                            await block_ip(
+                            await self.ip_blocking_service.block_ip(
                                 db=db,
                                 ip_address=client_ip,
                                 user_agent=user_agent,

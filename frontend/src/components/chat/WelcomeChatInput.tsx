@@ -55,7 +55,7 @@ export function WelcomeChatInput({
                         Hi, {userName}!
                     </p>
                 )}
-                <div className="flex flex-col gap-2 w-full border p-3 rounded-xl">
+                <div className="flex flex-col gap-2 w-full border p-3 rounded-3xl">
                     {/* Selected Files Display */}
                     {files.length > 0 && (
                         <div className="flex flex-wrap gap-2 pb-2 border-b">
@@ -100,7 +100,7 @@ export function WelcomeChatInput({
                     <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2">
                         {/* Model Selection Dropdown */}
                         <Select value={selectedModel} onValueChange={onModelChange}>
-                            <SelectTrigger className="w-full sm:w-[180px]">
+                            <SelectTrigger className="w-full sm:w-[180px] rounded-full">
                                 <SelectValue placeholder="Select a model" />
                             </SelectTrigger>
                             <SelectContent>

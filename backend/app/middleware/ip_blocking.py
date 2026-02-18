@@ -6,13 +6,17 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
 from app.database import AsyncSessionLocal
-from app.services.ip_blocking import is_ip_blocked
+from app.services.ip_blocking import IPBlockingService
 
 logger = logging.getLogger(__name__)
 
 
 class IPBlockingMiddleware(BaseHTTPMiddleware):
     """Middleware to check if IP is blocked and deny access."""
+
+    def __init__(self, app, ip_blocking_service: IPBlockingService = None):
+        super().__init__(app)
+        self.ip_blocking_service = ip_blocking_service or IPBlockingService()
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         # Get client IP
@@ -26,7 +30,7 @@ class IPBlockingMiddleware(BaseHTTPMiddleware):
         # Check if IP is blocked
         async with AsyncSessionLocal() as db:
             try:
-                blocked_ip = await is_ip_blocked(db, client_ip)
+                blocked_ip = await self.ip_blocking_service.is_ip_blocked(db, client_ip)
                 if blocked_ip:
                     logger.warning(
                         f"Blocked IP {client_ip} attempted to access: {request.url.path} "

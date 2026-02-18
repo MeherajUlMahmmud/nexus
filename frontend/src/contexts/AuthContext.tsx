@@ -92,40 +92,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const login = async (usernameOrEmail: string, password: string) => {
         try {
-            setLoading(true);
             const loginData = usernameOrEmail.includes('@')
                 ? { email: usernameOrEmail, password }
                 : { username: usernameOrEmail, password };
 
             const response = await AuthRepository.login(loginData);
 
-            console.log('response', response);
-
             // Double check response success
             if (response && response.status === "SUCCESS") {
                 storage.setTokenResponse(response);
                 setUser(response.data.user);
-                setLoading(false);
                 navigate(APP_ROUTES.HOME, { replace: true });
             } else if (response && response.status === "FAIL") {
                 throw new Error(response.message);
             } else {
                 throw new Error('Login failed');
             }
-        } catch (error) {
-            setLoading(false);
-            throw new Error('Failed to login');
+        } catch (error: any) {
+            const message =
+                error?.response?.data?.message ||
+                error?.message ||
+                'Failed to login. Please check your credentials.';
+            throw new Error(message);
         }
     };
 
     const register = async (registerRequest: RegisterRequest) => {
         try {
-            setLoading(true);
             const response = await AuthRepository.register(registerRequest);
-            console.log('response', response);
             if (response && response.status === "SUCCESS") {
                 toast.success('Registration successful');
-                setLoading(false);
                 navigate(APP_ROUTES.LOGIN, { replace: true });
             } else if (response && response.status === "FAIL") {
                 toast.error(response.message);
@@ -134,10 +130,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 toast.error('Failed to register');
                 throw new Error('Failed to register');
             }
-        } catch (error) {
-            setLoading(false);
-            toast.error('Failed to register');
-            throw new Error('Failed to register');
+        } catch (error: any) {
+            const message =
+                error?.response?.data?.message ||
+                error?.message ||
+                'Failed to register. Please try again.';
+            // Only show toast if not already shown (from response.status === "FAIL" case)
+            if (!error?.message || error.message === 'Failed to register') {
+                toast.error(message);
+            }
+            throw new Error(message);
         }
     };
 

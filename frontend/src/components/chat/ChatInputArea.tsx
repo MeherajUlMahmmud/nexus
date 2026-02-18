@@ -17,6 +17,8 @@ interface ChatInputAreaProps {
     sending: boolean;
     transcribing: boolean;
     recording: boolean;
+    micDisabled?: boolean;
+    micDisabledReason?: string;
     sessionModelName?: string;
     models: Model[];
     onInputChange: (value: string) => void;
@@ -33,6 +35,8 @@ export function ChatInputArea({
     sending,
     transcribing,
     recording,
+    micDisabled = false,
+    micDisabledReason,
     sessionModelName,
     models,
     onInputChange,
@@ -126,10 +130,15 @@ export function ChatInputArea({
                             </Button>
                             <Button
                                 onClick={onRecordAudio}
-                                disabled={sending || transcribing}
+                                disabled={sending || transcribing || micDisabled}
                                 variant={recording ? "destructive" : "outline"}
                                 size="icon"
                                 className="flex-1 sm:flex-none"
+                                title={
+                                    micDisabled
+                                        ? (micDisabledReason || "Microphone unavailable")
+                                        : (recording ? "Stop recording" : "Record audio")
+                                }
                             >
                                 {recording ? (
                                     <Square className="size-4" />

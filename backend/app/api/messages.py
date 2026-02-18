@@ -1,39 +1,47 @@
 import logging
 import os
 import time
-import uuid
 from typing import List
-
-from fastapi import APIRouter, Depends, status, Form, File as FastAPIFile, UploadFile, Request
-from sqlalchemy.ext.asyncio import AsyncSession
+import uuid
 
 from app.agents.validation import ValidationAgent
 from app.database import get_db
-from app.exceptions import NotFoundError, ForbiddenError
+from app.exceptions import ForbiddenError, NotFoundError
 from app.models.user import User
 from app.schemas.response import APIResponse
-from app.services.chat import (
-    validate_session,
-    process_uploaded_files,
-    create_user_message,
-    prepare_messages_for_api,
-    execute_tool_orchestration,
-    get_llm_response,
-    parse_created_files,
-    create_file_records_for_generated_files,
-    create_assistant_message,
-)
-from app.services.message import get_session_messages
+from app.services.chat import ChatService
+from app.services.message import MessageService
 from app.tools.location import get_client_ip
 from app.utils.dependencies import get_current_user
 from app.utils.response import fail_response, success_response
+from fastapi import (
+    APIRouter,
+    Depends,
+    File as FastAPIFile,
+    Form,
+    Request,
+    UploadFile,
+    status,
+)
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 router = APIRouter(
     prefix="/api/sessions/{session_id}/messages", tags=["Messages"])
 
-# Initialize validation agent
+# Initialize validation agent and chat service
 validation_agent = ValidationAgent()
+
+
+def get_chat_service() -> ChatService:
+    """Dependency that returns the chat service instance."""
+    return ChatService()
+
+
+def get_message_service() -> MessageService:
+    """Dependency that returns the message service instance."""
+    return MessageService()
+
 
 # Create the upload directory if it doesn't exist
 UPLOAD_DIR = "uploads"
@@ -45,13 +53,14 @@ if not os.path.exists(UPLOAD_DIR):
 async def get_messages(
         session_id: uuid.UUID,
         current_user: User = Depends(get_current_user),
-        db: AsyncSession = Depends(get_db)
+        db: AsyncSession = Depends(get_db),
+        message_service: MessageService = Depends(get_message_service),
 ):
     """Get all messages in a chat session."""
     logger.info(
         f"Get messages requested - session_id: {session_id}, user_id: {current_user.id}")
     try:
-        messages = await get_session_messages(db, session_id, current_user)
+        messages = await message_service.get_session_messages(db, session_id, current_user)
         logger.info(
             f"Messages retrieved successfully - session_id: {session_id}, user_id: {current_user.id}, count: {len(messages)}")
         return success_response(
@@ -71,7 +80,9 @@ async def chat(
         content: str = Form(...),
         files: List[UploadFile] = FastAPIFile(default=[]),
         current_user: User = Depends(get_current_user),
-        db: AsyncSession = Depends(get_db)
+        db: AsyncSession = Depends(get_db),
+        chat_service: ChatService = Depends(get_chat_service),
+        message_service: MessageService = Depends(get_message_service),
 ):
     """
     Send a message and get AI response with optional tool execution.
@@ -86,7 +97,7 @@ async def chat(
 
     try:
         # Validate session
-        session = await validate_session(db, session_id, current_user)
+        session = await chat_service.validate_session(db, session_id, current_user)
 
         # Validate user query for security threats
         validation_context = {
@@ -114,15 +125,16 @@ async def chat(
             )
 
         # Get existing messages for context
-        logger.debug(f"[CHAT_CONTEXT] Loading conversation history - session_id: {session_id}")
-        existing_messages = await get_session_messages(db, session_id, current_user)
+        logger.debug(
+            f"[CHAT_CONTEXT] Loading conversation history - session_id: {session_id}")
+        existing_messages = await message_service.get_session_messages(db, session_id, current_user)
         logger.info(
             f"[CHAT_CONTEXT] Loaded {len(existing_messages)} messages - "
             f"session_id: {session_id}, model: {session.model_name}"
         )
 
         # Process uploaded files
-        file_list, file_contents, saved_file_paths, file_error = await process_uploaded_files(
+        file_list, file_contents, saved_file_paths, file_error = await chat_service.process_uploaded_files(
             files, session_id, current_user.id
         )
 
@@ -132,7 +144,7 @@ async def chat(
 
         # Create user message
         try:
-            user_message = await create_user_message(
+            user_message = await chat_service.create_user_message(
                 db, session_id, content, file_list
             )
         except Exception as db_error:
@@ -146,11 +158,12 @@ async def chat(
                     if os.path.exists(saved_path):
                         os.remove(saved_path)
                 except Exception as cleanup_error:
-                    logger.error(f"Failed to cleanup file {saved_path}: {cleanup_error}")
+                    logger.error(
+                        f"Failed to cleanup file {saved_path}: {cleanup_error}")
             return fail_response(message="Failed to save message and files")
 
         # Prepare messages for API
-        groq_messages = prepare_messages_for_api(
+        groq_messages = chat_service.prepare_messages_for_api(
             existing_messages, user_message, file_contents
         )
 
@@ -164,13 +177,13 @@ async def chat(
         ]
 
         # Execute tool orchestration or get direct LLM response
-        final_response_content, tools_used_count, tool_results = await execute_tool_orchestration(
+        final_response_content, tools_used_count, tool_results = await chat_service.execute_tool_orchestration(
             content, conversation_history, session_id, session.model_name, client_ip
         )
 
         # Get LLM response if tools weren't used
         if final_response_content is None:
-            final_response_content, groq_metadata = await get_llm_response(
+            final_response_content, groq_metadata = await chat_service.get_llm_response(
                 groq_messages, session.model_name, session_id
             )
         else:
@@ -211,13 +224,13 @@ async def chat(
         }
 
         # Parse and create file records for generated files
-        created_files = parse_created_files(tool_results)
-        generated_file_list = await create_file_records_for_generated_files(
+        created_files = chat_service.parse_created_files(tool_results)
+        generated_file_list = await chat_service.create_file_records_for_generated_files(
             created_files, session_id
         )
 
         # Create assistant message
-        response_data = await create_assistant_message(
+        response_data = await chat_service.create_assistant_message(
             db, session_id, final_response_content, response_metadata, generated_file_list
         )
 

@@ -2,16 +2,15 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import List, Dict, Any, Optional
-
-import httpx
-from groq import Groq
+from typing import Any, Dict, List, Optional
 
 from app.config import settings
 from app.exceptions import BadRequestError
 from app.prompts import SESSION_TITLE_SYSTEM_PROMPT, get_session_title_prompt
 from app.utils.cache_keys import MODELS_CACHE_KEY
 from app.utils.redis_client import get_redis_client
+from groq import Groq
+import httpx
 
 logger = logging.getLogger(__name__)
 

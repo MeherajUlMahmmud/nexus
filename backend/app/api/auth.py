@@ -8,7 +8,7 @@ from app.models.user import User
 from app.schemas.auth import Register, Login, RefreshTokenRequest
 from app.schemas.response import APIResponse
 from app.schemas.user import UserResponse
-from app.services.auth import register_user, login_user, refresh_access_token, revoke_refresh_token
+from app.services.auth import AuthService
 from app.utils.dependencies import get_current_user
 from app.utils.response import success_response
 
@@ -16,15 +16,21 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
 
+def get_auth_service() -> AuthService:
+    """Dependency that returns the auth service instance."""
+    return AuthService()
+
+
 @router.post("/register", response_model=APIResponse, status_code=status.HTTP_201_CREATED)
 async def register(
         user_data: Register,
-        db: AsyncSession = Depends(get_db)
+        db: AsyncSession = Depends(get_db),
+        auth_service: AuthService = Depends(get_auth_service),
 ):
     """Register a new user."""
     logger.info(f"Registration attempt for username: {user_data.username}, email: {user_data.email}")
     try:
-        user = await register_user(db, user_data)
+        user = await auth_service.register_user(db, user_data)
         logger.info(
             f"User registered successfully - user_id: {user.id}, username: {user.username}, email: {user.email}")
         return success_response(
@@ -39,13 +45,14 @@ async def register(
 @router.post("/login", response_model=APIResponse)
 async def login(
         login_data: Login,
-        db: AsyncSession = Depends(get_db)
+        db: AsyncSession = Depends(get_db),
+        auth_service: AuthService = Depends(get_auth_service),
 ):
     """Authenticate user and get JWT token."""
     identifier = login_data.username or login_data.email
     logger.info(f"Login attempt for: {identifier}")
     try:
-        token_data = await login_user(db, login_data)
+        token_data = await auth_service.login_user(db, login_data)
         user_id = token_data.user.get("id")
         logger.info(f"Login successful for: {identifier}, user_id: {user_id}")
         return success_response(
@@ -60,12 +67,13 @@ async def login(
 @router.post("/refresh", response_model=APIResponse)
 async def refresh(
         refresh_data: RefreshTokenRequest,
-        db: AsyncSession = Depends(get_db)
+        db: AsyncSession = Depends(get_db),
+        auth_service: AuthService = Depends(get_auth_service),
 ):
     """Refresh access token using refresh token."""
     logger.info(f"Token refresh requested")
     try:
-        token_data = await refresh_access_token(db, refresh_data.refresh_token)
+        token_data = await auth_service.refresh_access_token(db, refresh_data.refresh_token)
         logger.info(f"Token refreshed successfully")
         return success_response(
             message="Token refreshed successfully",
@@ -79,12 +87,13 @@ async def refresh(
 @router.post("/logout", response_model=APIResponse)
 async def logout(
         refresh_data: RefreshTokenRequest,
-        db: AsyncSession = Depends(get_db)
+        db: AsyncSession = Depends(get_db),
+        auth_service: AuthService = Depends(get_auth_service),
 ):
     """Revoke refresh token (logout)."""
     logger.info(f"Logout requested")
     try:
-        await revoke_refresh_token(db, refresh_data.refresh_token)
+        await auth_service.revoke_refresh_token(db, refresh_data.refresh_token)
         logger.info(f"Refresh token revoked successfully")
         return success_response(
             message="Logged out successfully"

@@ -228,3 +228,4 @@ local_settings.py
 local_config.py
 config.local.*
 
+/frontend/npm-cache

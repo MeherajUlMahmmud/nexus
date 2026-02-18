@@ -169,7 +169,7 @@ export default function ChatPage() {
         setFiles(prev => prev.filter((_, i) => i !== index));
     };
 
-    const handleSessionClick = (sessionId: number) => {
+    const handleSessionClick = (sessionId: string) => {
         navigate(`/${sessionId}`);
     };
 

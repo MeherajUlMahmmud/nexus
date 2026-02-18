@@ -5,8 +5,8 @@ This project uses [Alembic](https://alembic.sqlalchemy.org/) for database schema
 ## Quick Reference
 
 ```bash
-# Activate virtual environment first
-source venv/bin/activate
+# Activate virtual environment first (if using one)
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Create a new migration after model changes
 alembic revision --autogenerate -m "description_of_changes"

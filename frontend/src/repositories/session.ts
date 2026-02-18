@@ -25,21 +25,21 @@ export const SessionRepository = {
     /**
      * Get session details
      */
-    getSessionDetails: async (sessionId: number): Promise<SessionResponse> => {
+    getSessionDetails: async (sessionId: string): Promise<SessionResponse> => {
         const response = await ApiHandler.sendGetRequest(API_ROUTES.SESSIONS.DETAILS(sessionId));
         return response.data;
     },
     /**
      * Update session
      */
-    updateSession: async (sessionId: number, data: SessionUpdate): Promise<SessionResponse> => {
+    updateSession: async (sessionId: string, data: SessionUpdate): Promise<SessionResponse> => {
         const response = await ApiHandler.sendPutRequest(API_ROUTES.SESSIONS.UPDATE(sessionId), data);
         return response.data;
     },
     /**
      * Delete session
      */
-    deleteSession: async (sessionId: number): Promise<void> => {
+    deleteSession: async (sessionId: string): Promise<void> => {
         await ApiHandler.sendDeleteRequest(API_ROUTES.SESSIONS.DELETE(sessionId));
     },
 };

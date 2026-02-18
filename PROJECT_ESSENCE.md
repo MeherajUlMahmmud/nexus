@@ -146,9 +146,12 @@ The system uses an intelligent agent that:
    - Automatically attaches created files to assistant messages
    - Supports metadata embedding in file content
 
-4. **Location Tool** (Available but not registered)
-   - Gets location information from IP address
-   - Can be enabled for IP-based location services
+4. **Web Search Tool**
+   - Searches the web for information
+   - Returns relevant search results
+   - Provides URLs and snippets from search results
+
+**Note**: Location Tool exists in the codebase but is not currently registered in the tool registry. It can be enabled by adding it to `app/tools/__init__.py` if needed.
 
 #### Tool Registry Pattern
 - **BaseTool Interface**: Abstract base class for all tools
@@ -307,7 +310,7 @@ All endpoints follow RESTful conventions and return standardized responses:
 
 ### 5.5 Model Endpoints
 
-- `GET /api/models/list` - List available AI models
+- `GET /api/models` - List available AI models
   - Cached in Redis (1 hour TTL) if enabled
   - Fetches from Groq API if cache miss
 
@@ -554,10 +557,16 @@ Token Refresh
 1. **Setup**:
    ```bash
    cd backend
-   python -m venv venv
-   source venv/bin/activate  # Windows: venv\Scripts\activate
-   pip install -r requirements.txt
+   # Install dependencies with uv (recommended)
+   uv pip install -r requirements.txt
+   
+   # Or with virtual environment:
+   uv venv
+   source .venv/bin/activate  # Windows: .venv\Scripts\activate
+   uv pip install -r requirements.txt
    ```
+   
+   **Note**: Install uv first if not already installed: [Install uv](https://github.com/astral-sh/uv)
 
 2. **Database**:
    ```bash

@@ -68,7 +68,9 @@ def setup_logging(log_dir: str = "logs", log_level: str = "INFO"):
     logging.getLogger("uvicorn").setLevel(logging.WARNING)
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("fastapi").setLevel(logging.WARNING)
-    logging.getLogger("sqlalchemy").setLevel(logging.WARNING)
+    logging.getLogger("sqlalchemy").setLevel(logging.ERROR)  # Suppress SQLAlchemy logs
+    logging.getLogger("sqlalchemy.engine").setLevel(logging.ERROR)  # Suppress SQL query logs
+    logging.getLogger("sqlalchemy.pool").setLevel(logging.ERROR)  # Suppress connection pool logs
     logging.getLogger("httpx").setLevel(logging.WARNING)
 
     # Clean up old log files (older than 30 days)

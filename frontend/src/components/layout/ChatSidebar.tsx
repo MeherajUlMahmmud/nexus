@@ -26,8 +26,8 @@ import { useSession } from "@/contexts/SessionContext";
 import { APP_ROUTES } from "@/lib/constants";
 
 interface ChatSidebarProps {
-    currentSessionId?: number;
-    onSessionClick?: (sessionId: number) => void;
+    currentSessionId?: string;
+    onSessionClick?: (sessionId: string) => void;
     mobileMenuOpen?: boolean;
     onMobileMenuOpenChange?: (open: boolean) => void;
 }
@@ -43,7 +43,7 @@ export const ChatSidebar = memo(function ChatSidebar({
     const navigate = useNavigate();
     const { user, logout } = useAuth();
     const { sessions, loading: sessionsLoading, deleteSession } = useSession();
-    const [sessionToDelete, setSessionToDelete] = useState<number | null>(null);
+    const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [showLogoutDialog, setShowLogoutDialog] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -69,14 +69,14 @@ export const ChatSidebar = memo(function ChatSidebar({
         }
     }, [isCollapsed]);
 
-    const handleSessionClick = useCallback((sessionId: number) => {
+    const handleSessionClick = useCallback((sessionId: string) => {
         if (onSessionClick) {
             onSessionClick(sessionId);
         }
         setMobileMenuOpen(false);
     }, [onSessionClick]);
 
-    const handleDeleteClick = useCallback((e: React.MouseEvent, sessionId: number) => {
+    const handleDeleteClick = useCallback((e: React.MouseEvent, sessionId: string) => {
         e.stopPropagation();
         setSessionToDelete(sessionId);
         setShowDeleteDialog(true);
@@ -219,7 +219,11 @@ export const ChatSidebar = memo(function ChatSidebar({
                             </div>
                         </Link>
                         <div className="flex flex-col gap-2">
-                            <Button variant="outline" className="w-full" onClick={() => setShowLogoutDialog(true)}>
+                            <Button
+                                variant="destructive"
+                                className="w-full"
+                                onClick={() => setShowLogoutDialog(true)}
+                            >
                                 <LogOut className="size-4 rotate-180 mr-2" />
                                 Logout
                             </Button>

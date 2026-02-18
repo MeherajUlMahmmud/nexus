@@ -71,19 +71,21 @@ export default function ProfilePage() {
                                     </Avatar>
                                 </div>
                                 <div className="flex-1 space-y-4">
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <User className="h-4 w-4" />
-                                            <span>Username</span>
+                                    <div className='grid grid-cols-2 gap-4'>
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                <User className="h-4 w-4" />
+                                                <span>Username</span>
+                                            </div>
+                                            <p className="text-lg font-medium">{user.username}</p>
                                         </div>
-                                        <p className="text-lg font-medium">{user.username}</p>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <User className="h-4 w-4" />
-                                            <span>Name</span>
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                <User className="h-4 w-4" />
+                                                <span>Name</span>
+                                            </div>
+                                            <p className="text-lg font-medium">{user.name}</p>
                                         </div>
-                                        <p className="text-lg font-medium">{user.name}</p>
                                     </div>
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-2 text-sm text-muted-foreground">

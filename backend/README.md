@@ -5,21 +5,28 @@ FastAPI backend for the Nexus chat application with AI-powered conversations.
 ## Requirements
 
 - Python 3.10+
+- uv (fast Python package installer) - [Install uv](https://github.com/astral-sh/uv)
 - Redis (optional, for caching)
 
 ## Quick Start
 
-### 1. Create Virtual Environment
+### 1. Install Dependencies with uv
 
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+uv pip install -r requirements.txt
 ```
 
-### 2. Install Dependencies
+Or if you prefer to use a virtual environment:
 
 ```bash
-pip install -r requirements.txt
+# Create virtual environment
+uv venv
+
+# Activate virtual environment
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
+uv pip install -r requirements.txt
 ```
 
 ### 3. Environment Variables
@@ -139,7 +146,7 @@ backend/
 - `POST /api/sessions/{id}/messages/chat` - Send message and get AI response
 
 ### Models
-- `GET /api/models/list` - List available AI models
+- `GET /api/models` - List available AI models
 
 ### Transcription
 - `POST /api/transcribe` - Transcribe audio to text

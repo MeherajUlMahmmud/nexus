@@ -24,6 +24,7 @@ import { MessageItem } from "@/components/chat/MessageItem";
 import { MessageMetadataModal } from "@/components/chat/MessageMetadataModal";
 import { ChatInputArea } from "@/components/chat/ChatInputArea";
 import { ChatHeader } from "@/components/chat/ChatHeader";
+import { v4 as uuidv4 } from 'uuid';
 
 const PENDING_MESSAGE_KEY = 'nexus_pending_message';
 
@@ -41,13 +42,15 @@ export default function ChatSessionPage() {
     const [sending, setSending] = useState(false);
     const [recording, setRecording] = useState(false);
     const [transcribing, setTranscribing] = useState(false);
+    const [micDisabled, setMicDisabled] = useState(false);
+    const [micDisabledReason, setMicDisabledReason] = useState<string | undefined>(undefined);
 
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
     const streamRef = useRef<MediaStream | null>(null);
 
     const [sessionLoading, setSessionLoading] = useState(true);
-    const [speakingMessageId, setSpeakingMessageId] = useState<number | null>(null);
+    const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
     const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [editedTitle, setEditedTitle] = useState('');
@@ -55,7 +58,7 @@ export default function ChatSessionPage() {
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [deletingSession, setDeletingSession] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const [visibleThinking, setVisibleThinking] = useState<Set<number>>(new Set());
+    const [visibleThinking, setVisibleThinking] = useState<Set<string>>(new Set());
 
     const { refreshSessions } = useSession();
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -69,7 +72,7 @@ export default function ChatSessionPage() {
 
     useEffect(() => {
         if (sessionId) {
-            loadSession(parseInt(sessionId));
+            loadSession(sessionId);
         }
     }, [sessionId]);
 
@@ -103,7 +106,90 @@ export default function ChatSessionPage() {
         }
     };
 
-    const loadSession = async (id: number) => {
+    const updateMicAvailability = async () => {
+        const mediaDevices = navigator.mediaDevices;
+
+        if (!mediaDevices?.getUserMedia || !mediaDevices?.enumerateDevices) {
+            setMicDisabled(true);
+            setMicDisabledReason('Microphone is not supported in this browser');
+            return;
+        }
+
+        // If permission API is available and explicitly denied, we can disable proactively
+        try {
+            if ((navigator as any).permissions?.query) {
+                const status = await (navigator as any).permissions.query({ name: 'microphone' });
+                if (status?.state === 'denied') {
+                    setMicDisabled(true);
+                    setMicDisabledReason('Microphone permission is blocked');
+                    return;
+                }
+            }
+        } catch {
+            // ignore; permission API not supported everywhere
+        }
+
+        try {
+            const devices = await mediaDevices.enumerateDevices();
+            const hasAudioInput = devices.some((d) => d.kind === 'audioinput');
+            if (!hasAudioInput) {
+                setMicDisabled(true);
+                setMicDisabledReason('No microphone device detected');
+                return;
+            }
+        } catch {
+            // If device enumeration fails (rare), don't hard-disable; let getUserMedia decide.
+        }
+
+        setMicDisabled(false);
+        setMicDisabledReason(undefined);
+    };
+
+    useEffect(() => {
+        updateMicAvailability();
+
+        // Keep state updated if devices/permissions change
+        const mediaDevices = navigator.mediaDevices as any;
+        const onDeviceChange = () => updateMicAvailability();
+        if (mediaDevices?.addEventListener) {
+            mediaDevices.addEventListener('devicechange', onDeviceChange);
+        } else if (mediaDevices) {
+            mediaDevices.ondevicechange = onDeviceChange;
+        }
+
+        let permissionStatus: any;
+        (async () => {
+            try {
+                if ((navigator as any).permissions?.query) {
+                    permissionStatus = await (navigator as any).permissions.query({ name: 'microphone' });
+                    if (permissionStatus) {
+                        permissionStatus.onchange = () => updateMicAvailability();
+                    }
+                }
+            } catch {
+                // ignore
+            }
+        })();
+
+        return () => {
+            stopRecording();
+            try {
+                if (mediaDevices?.removeEventListener) {
+                    mediaDevices.removeEventListener('devicechange', onDeviceChange);
+                } else if (mediaDevices) {
+                    mediaDevices.ondevicechange = null;
+                }
+                if (permissionStatus) {
+                    permissionStatus.onchange = null;
+                }
+            } catch {
+                // ignore
+            }
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const loadSession = async (id: string) => {
         try {
             setSessionLoading(true);
             const response = await SessionRepository.getSessionDetails(id);
@@ -122,7 +208,7 @@ export default function ChatSessionPage() {
         }
     };
 
-    const loadMessages = async (sessionId: number) => {
+    const loadMessages = async (sessionId: string) => {
         try {
             setLoading(true);
             const response = await MessageRepository.getMessages(sessionId);
@@ -142,6 +228,11 @@ export default function ChatSessionPage() {
     const handleRecordAudio = async () => {
         if (recording) {
             stopRecording();
+            return;
+        }
+
+        if (micDisabled) {
+            toast.error(micDisabledReason || 'Microphone unavailable');
             return;
         }
 
@@ -181,6 +272,8 @@ export default function ChatSessionPage() {
             setRecording(true);
         } catch (error) {
             console.error('Failed to access microphone:', error);
+            // Update UI state so the mic button can reflect blocked permission
+            await updateMicAvailability();
             toast.error('Failed to access microphone. Please check permissions.');
             setRecording(false);
         }
@@ -221,7 +314,7 @@ export default function ChatSessionPage() {
         if (!content && files.length === 0) return;
 
         const userMessage: Message = {
-            id: Date.now(),
+            id: uuidv4(),
             session_id: session.id,
             role: 'user',
             content: content,
@@ -301,7 +394,7 @@ export default function ChatSessionPage() {
     };
 
 
-    const handleSessionClick = (sessionId: number) => {
+    const handleSessionClick = (sessionId: string) => {
         navigate(`/${sessionId}`);
     };
 
@@ -371,7 +464,7 @@ export default function ChatSessionPage() {
         }
     };
 
-    const toggleThinking = (messageId: number) => {
+    const toggleThinking = (messageId: string) => {
         setVisibleThinking(prev => {
             const newSet = new Set(prev);
             if (newSet.has(messageId)) {
@@ -493,6 +586,8 @@ export default function ChatSessionPage() {
                     sending={sending}
                     transcribing={transcribing}
                     recording={recording}
+                    micDisabled={micDisabled}
+                    micDisabledReason={micDisabledReason}
                     sessionModelName={session?.model_name}
                     models={models}
                     onInputChange={setInputValue}
